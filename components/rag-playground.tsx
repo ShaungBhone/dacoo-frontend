@@ -18,6 +18,12 @@ import {
 
 import { cn } from "@/lib/utils"
 import { PlaygroundNav } from "@/components/playground-nav"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 /* -------------------------------------------------------------------------- */
 /*                              Demo knowledge base                            */
@@ -341,7 +347,7 @@ function ConfigRail({
         <input
           value={genModel}
           onChange={(e) => setGenModel(e.target.value)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         />
       </Field>
 
@@ -349,7 +355,7 @@ function ConfigRail({
         <input
           value={embedModel}
           onChange={(e) => setEmbedModel(e.target.value)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         />
       </Field>
 
@@ -406,7 +412,7 @@ function KnowledgeBase() {
               {file.name}
             </span>
             {file.status === "indexing" ? (
-              <Loader2Icon className="size-3.5 shrink-0 animate-spin text-emerald-600" />
+              <Loader2Icon className="size-3.5 shrink-0 animate-spin text-primary" />
             ) : (
               <span className="shrink-0 font-mono text-xs text-muted-foreground">
                 {file.tokens}
@@ -438,7 +444,7 @@ function QueryBar({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 pl-3 shadow-sm focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 pl-3 shadow-sm focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         <input
           value={query}
@@ -451,7 +457,7 @@ function QueryBar({
           type="button"
           onClick={onRun}
           disabled={!query.trim() || isRunning}
-          className="flex shrink-0 items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {isRunning ? (
             <Loader2Icon className="size-4 animate-spin" />
@@ -468,7 +474,7 @@ function QueryBar({
             key={q}
             type="button"
             onClick={() => setQuery(q)}
-            className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-emerald-500/40 hover:text-foreground"
+            className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
             {q}
           </button>
@@ -512,7 +518,7 @@ function AnswerPanel({ result }: { result: RunResult }) {
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="size-4 text-emerald-600" />
+          <SparklesIcon className="size-4 text-primary" />
           <h2 className="text-sm font-semibold">Generated answer</h2>
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
             {result.model}
@@ -524,7 +530,7 @@ function AnswerPanel({ result }: { result: RunResult }) {
           className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           {copied ? (
-            <CheckIcon className="size-3.5 text-emerald-600" />
+            <CheckIcon className="size-3.5 text-primary" />
           ) : (
             <CopyIcon className="size-3.5" />
           )}
@@ -532,14 +538,18 @@ function AnswerPanel({ result }: { result: RunResult }) {
         </button>
       </div>
 
-      <p className="mt-4 text-sm leading-7 text-foreground">
-        {result.answer.map((seg, i) => (
-          <React.Fragment key={i}>
-            {seg.text}
-            {seg.cite != null && <Citation n={seg.cite} />}
-          </React.Fragment>
-        ))}
-      </p>
+      <TooltipProvider delayDuration={100}>
+        <p className="mt-4 text-sm leading-7 text-foreground">
+          {result.answer.map((seg, i) => (
+            <React.Fragment key={i}>
+              {seg.text}
+              {seg.cite != null && (
+                <Citation n={seg.cite} chunk={result.chunks[seg.cite - 1]} />
+              )}
+            </React.Fragment>
+          ))}
+        </p>
+      </TooltipProvider>
 
       <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">
         {metrics.map((m) => (
@@ -563,11 +573,47 @@ function AnswerPanel({ result }: { result: RunResult }) {
   )
 }
 
-function Citation({ n }: { n: number }) {
-  return (
-    <span className="mx-0.5 inline-flex size-4 translate-y-[-1px] items-center justify-center rounded bg-emerald-100 align-middle font-mono text-[10px] font-semibold text-emerald-700">
+function Citation({ n, chunk }: { n: number; chunk?: Retrieved }) {
+  const badge = (
+    <button
+      type="button"
+      className="mx-0.5 inline-flex size-4 translate-y-[-1px] cursor-pointer items-center justify-center rounded bg-primary/10 align-middle font-mono text-[10px] font-semibold text-primary outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+      aria-label={
+        chunk ? `Source ${n}: ${chunk.source}` : `Source ${n}`
+      }
+    >
       {n}
-    </span>
+    </button>
+  )
+
+  if (!chunk) return badge
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{badge}</TooltipTrigger>
+      <TooltipContent
+        side="top"
+        className="block max-w-sm rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-md [&_svg]:hidden"
+      >
+        <span className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate font-mono text-xs font-medium text-foreground">
+              {chunk.source}
+            </span>
+          </span>
+          <span className="shrink-0 font-mono text-xs font-semibold text-primary">
+            {chunk.score.toFixed(3)}
+          </span>
+        </span>
+        <span className="block px-3 pt-1.5 text-[11px] text-muted-foreground">
+          {chunk.path} · p.&nbsp;{chunk.page} · {chunk.tokens} tok
+        </span>
+        <span className="block px-3 pb-3 pt-1.5 text-xs leading-5 text-foreground/80">
+          {chunk.text}
+        </span>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -600,7 +646,7 @@ function ChunksList({ chunks }: { chunks: Retrieved[] }) {
               className="rounded-xl border border-border bg-card p-4 shadow-sm"
             >
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-emerald-100 font-mono text-[11px] font-semibold text-emerald-700">
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-primary/10 font-mono text-[11px] font-semibold text-primary">
                   {idx + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -617,11 +663,11 @@ function ChunksList({ chunks }: { chunks: Retrieved[] }) {
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-muted sm:block">
                     <span
-                      className="block h-full rounded-full bg-emerald-500"
+                      className="block h-full rounded-full bg-primary"
                       style={{ width: `${Math.round(chunk.score * 100)}%` }}
                     />
                   </span>
-                  <span className="font-mono text-sm font-semibold text-emerald-700">
+                  <span className="font-mono text-sm font-semibold text-primary">
                     {chunk.score.toFixed(3)}
                   </span>
                 </div>
@@ -703,7 +749,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-emerald-600"
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
         aria-label={label}
       />
     </div>
@@ -715,12 +761,12 @@ function Toggle({ on }: { on: boolean }) {
     <span
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-        on ? "bg-emerald-600" : "bg-muted-foreground/30"
+        on ? "bg-primary" : "bg-muted-foreground/30"
       )}
     >
       <span
         className={cn(
-          "inline-block size-4 translate-x-0.5 rounded-full bg-white transition-transform",
+          "inline-block size-4 translate-x-0.5 rounded-full bg-background transition-transform",
           on && "translate-x-[18px]"
         )}
       />
