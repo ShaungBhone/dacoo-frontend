@@ -228,14 +228,14 @@ export function DatasetsView() {
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md border px-3 py-2.5 text-left transition-colors",
                       isActive
-                        ? "border-emerald-500/40 bg-emerald-50"
+                        ? "border-primary/40 bg-primary/10"
                         : "border-transparent hover:bg-muted/50"
                     )}
                   >
                     <DatabaseIcon
                       className={cn(
                         "size-4 shrink-0",
-                        isActive ? "text-emerald-600" : "text-muted-foreground"
+                        isActive ? "text-primary" : "text-muted-foreground"
                       )}
                     />
                     <span className="min-w-0 flex-1">
@@ -243,7 +243,7 @@ export function DatasetsView() {
                         className={cn(
                           "block truncate font-mono text-sm",
                           isActive
-                            ? "font-medium text-emerald-900"
+                            ? "font-medium text-foreground"
                             : "text-foreground"
                         )}
                       >
@@ -254,7 +254,7 @@ export function DatasetsView() {
                       </span>
                     </span>
                     {indexing && (
-                      <Loader2Icon className="size-3.5 shrink-0 animate-spin text-emerald-600" />
+                      <Loader2Icon className="size-3.5 shrink-0 animate-spin text-primary" />
                     )}
                   </button>
                 </li>
@@ -264,7 +264,7 @@ export function DatasetsView() {
 
           <button
             type="button"
-            className="mt-2 flex items-center justify-center gap-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-emerald-500/40 hover:text-foreground"
+            className="mt-2 flex items-center justify-center gap-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
             <UploadIcon className="size-4" />
             Upload source
@@ -278,7 +278,7 @@ export function DatasetsView() {
               <h1 className="font-mono text-xl font-semibold tracking-tight">
                 {active.name}
               </h1>
-              <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 indexed
               </span>
             </div>
@@ -422,7 +422,7 @@ function Stat({
 function StatusBadge({ status }: { status: DocStatus }) {
   if (status === "indexing") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
         <Loader2Icon className="size-3 animate-spin" />
         Indexing
       </span>
@@ -438,7 +438,7 @@ function StatusBadge({ status }: { status: DocStatus }) {
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      <CheckCircle2Icon className="size-3 text-emerald-600" />
+      <CheckCircle2Icon className="size-3 text-primary" />
       Ready
     </span>
   )

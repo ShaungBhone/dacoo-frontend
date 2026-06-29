@@ -22,7 +22,7 @@ export function PlaygroundNav({ active }: { active: string }) {
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 lg:px-6">
         <Link href="/playground" className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-md bg-emerald-600 text-white">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <SparklesIcon className="size-4" />
           </div>
           <span className="text-sm font-semibold">RAG Playground</span>
@@ -56,10 +56,10 @@ export function PlaygroundNav({ active }: { active: string }) {
 
         <div className="ml-auto flex items-center gap-3 md:ml-0">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className="size-2 rounded-full bg-primary" />
             index live
           </span>
-          <div className="size-7 rounded-full bg-emerald-600" aria-hidden />
+          <div className="size-7 rounded-full bg-primary" aria-hidden />
         </div>
       </div>
     </header>
