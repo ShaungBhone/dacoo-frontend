@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "Datasets", href: "/datasets" },
   { label: "Experiments", href: "/experiments" },
   { label: "Logs", href: "/logs" },
+  { label: "Docs", href: "/docs" },
   { label: "Settings", href: "/settings" },
 ]
 
