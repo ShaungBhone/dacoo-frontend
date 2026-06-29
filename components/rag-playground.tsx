@@ -3,30 +3,21 @@
 import * as React from "react"
 import {
   SparklesIcon,
-  SendHorizontalIcon,
   Loader2Icon,
   FileTextIcon,
-  GaugeIcon,
-  LayersIcon,
-  CoinsIcon,
   CopyIcon,
   CheckIcon,
-  RotateCcwIcon,
-  DatabaseIcon,
+  SearchIcon,
+  GitBranchIcon,
   ChevronDownIcon,
+  ClockIcon,
+  CoinsIcon,
+  ShieldCheckIcon,
+  TargetIcon,
+  DatabaseIcon,
+  CornerDownLeftIcon,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 /* -------------------------------------------------------------------------- */
@@ -36,91 +27,104 @@ import { cn } from "@/lib/utils"
 type Doc = {
   id: string
   source: string
-  title: string
+  path: string
+  page: number
+  tokens: number
   text: string
 }
 
 const KNOWLEDGE_BASE: Doc[] = [
   {
     id: "chunk_01",
-    source: "billing-guide.md",
-    title: "Invoicing & payment terms",
-    text: "Invoices are generated on the first of each month and are due within 30 days. Overdue invoices accrue a 1.5% monthly late fee. Clients can pay by card, ACH transfer, or wire. Partial payments are applied to the oldest outstanding balance first.",
+    source: "food-safety-handbook.pdf",
+    path: "Cold Storage → Poultry & Meat",
+    page: 47,
+    tokens: 214,
+    text: "Fresh poultry must be stored at or below 40°F (4°C) to inhibit bacterial growth. Prior to service, poultry must reach a minimum internal cooking temperature of 165°F (74°C) verified with a calibrated probe thermometer. Frozen poultry should be held at 0°F (-18°C) or lower.",
   },
   {
     id: "chunk_02",
-    source: "billing-guide.md",
-    title: "Refunds and credits",
-    text: "Refunds are issued to the original payment method within 5 to 10 business days. Account credits never expire and are automatically applied to the next invoice. Annual plans are refundable on a pro-rated basis within the first 14 days.",
+    source: "cold-chain-sop.md",
+    path: "Refrigerated Transport Standards",
+    page: 12,
+    tokens: 168,
+    text: "Refrigerated transport units carrying fresh poultry must maintain an air temperature between 34°F and 38°F (1–3°C) with continuous temperature logging at no more than 15-minute intervals. Any excursion beyond range must trigger an alert to the dispatch desk.",
   },
   {
     id: "chunk_03",
-    source: "security-policy.pdf",
-    title: "Data encryption",
-    text: "All customer data is encrypted at rest using AES-256 and in transit using TLS 1.3. Encryption keys are rotated every 90 days and stored in a hardware security module. Database backups are encrypted and replicated across three availability zones.",
+    source: "food-safety-handbook.pdf",
+    path: "Food Safety → Danger Zone",
+    page: 51,
+    tokens: 142,
+    text: "Any product held in the 40–140°F (4–60°C) temperature danger zone for more than four cumulative hours must be discarded and logged as a deviation. Logs are reviewed weekly by the food safety lead.",
   },
   {
     id: "chunk_04",
-    source: "security-policy.pdf",
-    title: "Access control",
-    text: "Access to production systems requires multi-factor authentication and is restricted by role-based access control. All privileged access is logged and reviewed quarterly. Employees lose access automatically within one hour of offboarding.",
+    source: "kyc-aml-policy.pdf",
+    path: "Merchant Onboarding → KYC",
+    page: 8,
+    tokens: 198,
+    text: "When onboarding a new merchant, KYC checks require collection of government-issued identification, business registration documents, and beneficial ownership disclosure. High-risk merchants undergo enhanced due diligence and sanctions screening before activation.",
   },
   {
     id: "chunk_05",
-    source: "onboarding.md",
-    title: "Creating your first workspace",
-    text: "After signing up, you are prompted to create a workspace. A workspace groups your team, projects, and billing under one organization. You can invite teammates by email and assign them owner, admin, or member roles from the workspace settings page.",
+    source: "payments-fee-schedule.md",
+    path: "Settlements → Cross-border",
+    page: 3,
+    tokens: 121,
+    text: "Cross-border card settlements incur a 1.0% currency conversion fee plus a fixed interchange surcharge of 0.30 per transaction. Settlements in non-supported currencies are converted at the daily mid-market rate.",
   },
   {
     id: "chunk_06",
-    source: "onboarding.md",
-    title: "Connecting data sources",
-    text: "You can connect data sources such as PDFs, Markdown files, and websites from the Sources tab. Each source is chunked, embedded, and indexed for retrieval. Re-indexing happens automatically whenever a source changes.",
+    source: "last-mile-logistics-guide.pdf",
+    path: "Delivery Exceptions → SLA",
+    page: 22,
+    tokens: 176,
+    text: "The standard SLA for resolving last-mile delivery exceptions is 24 hours from the time the exception is logged. Failed delivery attempts trigger an automatic reattempt on the next business day, and a third failure routes the parcel back to the hub.",
   },
   {
     id: "chunk_07",
-    source: "api-reference.md",
-    title: "Authentication tokens",
-    text: "The API uses bearer tokens passed in the Authorization header. Tokens are scoped to a single workspace and can be revoked at any time. Rate limits are 600 requests per minute per token, returning a 429 status when exceeded.",
+    source: "kyc-aml-policy.pdf",
+    path: "Monitoring → Transactions",
+    page: 14,
+    tokens: 159,
+    text: "Ongoing transaction monitoring flags activity that deviates from a merchant's expected volume profile. Flagged events generate a case for the compliance team and may pause settlements pending review.",
   },
   {
     id: "chunk_08",
-    source: "api-reference.md",
-    title: "Query endpoint",
-    text: "The /v1/query endpoint accepts a question, an optional top_k, and a temperature. It returns the generated answer along with the source chunks used to ground the response and per-chunk similarity scores.",
+    source: "warehouse-onboarding-faq.md",
+    path: "Getting Started",
+    page: 1,
+    tokens: 98,
+    text: "New warehouses are onboarded within 10 business days, including dock scheduling, inventory synchronization, and staff access provisioning. A dedicated implementation manager coordinates the cutover.",
   },
-  {
-    id: "chunk_09",
-    source: "model-card.md",
-    title: "Retrieval model",
-    text: "Retrieval uses a 1024-dimension embedding model with cosine similarity. Chunks are 512 tokens with a 64-token overlap. A reranker can be enabled to reorder the top candidates before they are passed to the generator.",
-  },
-  {
-    id: "chunk_10",
-    source: "model-card.md",
-    title: "Generation model",
-    text: "The generator is an instruction-tuned model with a 128k context window. Lower temperatures produce more deterministic, grounded answers, while higher temperatures increase creativity at the cost of factual precision.",
-  },
+]
+
+/* Aggregated file list for the knowledge-base rail. */
+const FILES = [
+  { name: "food-safety-handbook.pdf", tokens: 524, status: "ready" as const },
+  { name: "cold-chain-sop.md", tokens: 187, status: "ready" as const },
+  { name: "kyc-aml-policy.pdf", tokens: 318, status: "ready" as const },
+  { name: "payments-fee-schedule.md", tokens: 142, status: "ready" as const },
+  { name: "last-mile-logistics-guide.pdf", tokens: 463, status: "ready" as const },
+  { name: "warehouse-onboarding-faq.md", tokens: 0, status: "indexing" as const },
 ]
 
 const STOP_WORDS = new Set([
   "the", "a", "an", "and", "or", "of", "to", "in", "is", "are", "for", "on",
   "with", "how", "what", "do", "does", "can", "i", "my", "we", "you", "it",
-  "be", "by", "at", "as", "this", "that", "from", "your",
+  "be", "by", "at", "as", "this", "that", "from", "your", "when", "which",
+  "applies", "apply", "handled", "standard",
 ])
 
 const SAMPLE_QUERIES = [
-  "How long do I have to pay an invoice?",
-  "How is customer data encrypted?",
-  "How do I connect a new data source?",
-  "What does the query endpoint return?",
+  "What is the safe internal temperature for storing fresh poultry?",
+  "How are KYC checks handled when onboarding a new merchant?",
+  "What is the standard SLA for last-mile delivery exceptions?",
+  "Which fees apply to cross-border card settlements?",
 ]
 
-const MODELS = [
-  { id: "dacoo-rag-pro", label: "dacoo-rag-pro" },
-  { id: "dacoo-rag-mini", label: "dacoo-rag-mini" },
-  { id: "dacoo-rag-fast", label: "dacoo-rag-fast" },
-]
+const NAV_ITEMS = ["Playground", "Datasets", "Experiments", "Logs", "Settings"]
 
 /* -------------------------------------------------------------------------- */
 /*                            Retrieval simulation                             */
@@ -136,60 +140,58 @@ function tokenize(input: string): string[] {
 
 type Retrieved = Doc & { score: number }
 
-function retrieve(query: string, topK: number, threshold: number): Retrieved[] {
+function retrieve(query: string, topK: number): Retrieved[] {
   const qTokens = tokenize(query)
   if (qTokens.length === 0) return []
 
   const scored = KNOWLEDGE_BASE.map((doc) => {
-    const docTokens = tokenize(`${doc.title} ${doc.text}`)
+    const docTokens = tokenize(`${doc.path} ${doc.text}`)
     const docSet = new Set(docTokens)
     let overlap = 0
     for (const t of qTokens) if (docSet.has(t)) overlap += 1
-    // Pseudo cosine-like similarity, kept in a believable 0.4 - 0.95 range.
     const base = overlap / qTokens.length
-    const score = base === 0 ? 0 : 0.42 + base * 0.5
+    const score = base === 0 ? 0 : 0.5 + base * 0.45
     return { ...doc, score: Math.min(0.97, Number(score.toFixed(3))) }
   })
 
   return scored
-    .filter((d) => d.score >= threshold)
+    .filter((d) => d.score > 0.5)
     .sort((a, b) => b.score - a.score)
     .slice(0, topK)
 }
 
-function synthesizeAnswer(query: string, chunks: Retrieved[]): string {
+type AnswerSegment = { text: string; cite?: number }
+
+function synthesizeAnswer(chunks: Retrieved[]): AnswerSegment[] {
   if (chunks.length === 0) {
-    return "I could not find anything in the indexed sources that answers this question. Try rephrasing your query, lowering the similarity threshold, or connecting additional data sources."
+    return [
+      {
+        text: "I could not find anything in the indexed sources that answers this question. Try rephrasing the query, raising Top-K, or re-indexing your knowledge base.",
+      },
+    ]
   }
-  const top = chunks[0]
-  const supporting = chunks
-    .slice(1, 3)
-    .map((c) => c.text.split(".")[0].trim())
-    .filter(Boolean)
 
-  const lead = top.text.split(".").slice(0, 2).join(".").trim()
-  const extra =
-    supporting.length > 0
-      ? ` Additional context from the indexed material notes that ${supporting
-          .join("; ")
-          .toLowerCase()}.`
-      : ""
-
-  return `${lead}.${extra} This response is grounded in ${chunks.length} retrieved source ${
-    chunks.length === 1 ? "chunk" : "chunks"
-  }.`
+  const segments: AnswerSegment[] = []
+  chunks.slice(0, 3).forEach((chunk, idx) => {
+    const sentences = chunk.text
+      .split(/(?<=\.)\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const claim = sentences.slice(0, idx === 0 ? 2 : 1).join(" ")
+    segments.push({ text: idx === 0 ? claim : ` ${claim}`, cite: idx + 1 })
+  })
+  return segments
 }
 
 type RunResult = {
   query: string
-  answer: string
+  answer: AnswerSegment[]
   chunks: Retrieved[]
   latencyMs: number
-  promptTokens: number
-  completionTokens: number
+  tokens: number
+  faithfulness: number
+  relevance: number
   model: string
-  temperature: number
-  topK: number
 }
 
 /* -------------------------------------------------------------------------- */
@@ -197,225 +199,535 @@ type RunResult = {
 /* -------------------------------------------------------------------------- */
 
 export function RagPlayground() {
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState(SAMPLE_QUERIES[0])
+  const [genModel, setGenModel] = React.useState("gpt-4o")
+  const [embedModel, setEmbedModel] = React.useState("text-embedding-3-large")
   const [topK, setTopK] = React.useState(4)
   const [temperature, setTemperature] = React.useState(0.2)
-  const [threshold, setThreshold] = React.useState(0.45)
-  const [model, setModel] = React.useState(MODELS[0].id)
+  const [rerank, setRerank] = React.useState(true)
   const [isRunning, setIsRunning] = React.useState(false)
   const [result, setResult] = React.useState<RunResult | null>(null)
 
-  async function runQuery() {
+  const runQuery = React.useCallback(async () => {
     if (!query.trim() || isRunning) return
     setIsRunning(true)
 
     const start = performance.now()
-    const chunks = retrieve(query, topK, threshold)
-    const answer = synthesizeAnswer(query, chunks)
+    let chunks = retrieve(query, topK)
+    if (rerank) {
+      chunks = [...chunks].sort((a, b) => b.score - a.score)
+    }
+    const answer = synthesizeAnswer(chunks)
 
-    // Simulate network + inference latency.
-    await new Promise((r) => setTimeout(r, 650 + Math.random() * 700))
+    await new Promise((r) => setTimeout(r, 700 + Math.random() * 700))
 
     const latencyMs = Math.round(performance.now() - start)
+    const usedTokens = chunks.reduce((sum, c) => sum + c.tokens, 0)
+    const top = chunks[0]?.score ?? 0
     setResult({
       query,
       answer,
       chunks,
       latencyMs,
-      promptTokens: tokenize(query).length * 3 + chunks.length * 96 + 48,
-      completionTokens: Math.round(answer.length / 4),
-      model,
-      temperature,
-      topK,
+      tokens: usedTokens + 1300 + tokenize(query).length * 4,
+      faithfulness: chunks.length ? Math.round((0.82 + top * 0.13) * 100) : 0,
+      relevance: chunks.length ? Math.round((0.7 + top * 0.2) * 100) : 0,
+      model: genModel,
     })
     setIsRunning(false)
-  }
+  }, [query, topK, rerank, genModel, isRunning])
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    const native = e.nativeEvent as unknown as { isComposing?: boolean; keyCode?: number }
+  // Run the default query once on mount for an immediately useful view.
+  React.useEffect(() => {
+    runQuery()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const native = e.nativeEvent as unknown as {
+      isComposing?: boolean
+      keyCode?: number
+    }
     if (native.isComposing || native.keyCode === 229) return
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter") {
       e.preventDefault()
       runQuery()
     }
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-5 lg:gap-6">
-      {/* ----------------------------- Left: console ---------------------------- */}
-      <div className="flex flex-col gap-4 lg:col-span-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold">
-              <SparklesIcon className="size-4 text-primary" />
-              Query Console
-            </CardTitle>
-            <CardDescription>
-              Ask a question against your indexed knowledge base.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="rag-query">Question</Label>
-              <Textarea
-                id="rag-query"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="e.g. How long do I have to pay an invoice?"
-                className="min-h-28 resize-none"
-              />
-            </div>
+    <div className="flex min-h-svh flex-col bg-background text-foreground">
+      <TopNav />
 
-            <div className="flex flex-wrap gap-1.5">
-              {SAMPLE_QUERIES.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => setQuery(q)}
-                  className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
+        {/* ------------------------------ Left rail ----------------------------- */}
+        <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-64">
+          <ConfigRail
+            genModel={genModel}
+            setGenModel={setGenModel}
+            embedModel={embedModel}
+            setEmbedModel={setEmbedModel}
+            topK={topK}
+            setTopK={setTopK}
+            temperature={temperature}
+            setTemperature={setTemperature}
+            rerank={rerank}
+            setRerank={setRerank}
+          />
+          <KnowledgeBase />
+        </aside>
 
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={runQuery}
-                disabled={!query.trim() || isRunning}
-                className="flex-1"
-              >
-                {isRunning ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Running…
-                  </>
-                ) : (
-                  <>
-                    <SendHorizontalIcon className="size-4" />
-                    Run query
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Reset"
-                disabled={isRunning}
-                onClick={() => {
-                  setQuery("")
-                  setResult(null)
-                }}
-              >
-                <RotateCcwIcon className="size-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Press{" "}
-              <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">
-                ⌘/Ctrl
-              </kbd>{" "}
-              +{" "}
-              <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">
-                Enter
-              </kbd>{" "}
-              to run.
+        {/* ------------------------------- Console ------------------------------ */}
+        <main className="flex min-w-0 flex-1 flex-col gap-6">
+          <header className="flex flex-col gap-1">
+            <h1 className="text-xl font-semibold tracking-tight text-pretty">
+              Retrieval testing console
+            </h1>
+            <p className="text-sm text-muted-foreground text-pretty">
+              Run a query, inspect the generated answer, and trace every claim
+              back to its source chunk.
             </p>
-          </CardContent>
-        </Card>
+          </header>
 
-        {/* ---------------------------- Parameters ---------------------------- */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold">
-              Retrieval Parameters
-            </CardTitle>
-            <CardDescription>
-              Tune how context is fetched and generated.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="rag-model">Model</Label>
-              <div className="relative">
-                <select
-                  id="rag-model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  className="h-9 w-full appearance-none rounded-md border border-input bg-transparent px-3 pr-8 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  {MODELS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
+          <QueryBar
+            query={query}
+            setQuery={setQuery}
+            onRun={runQuery}
+            onKeyDown={handleKeyDown}
+            isRunning={isRunning}
+          />
 
-            <ParamSlider
-              id="rag-topk"
-              label="Top K"
-              value={topK}
-              min={1}
-              max={10}
-              step={1}
-              display={String(topK)}
-              onChange={setTopK}
-              hint="Number of chunks retrieved as context."
-            />
-            <ParamSlider
-              id="rag-threshold"
-              label="Similarity threshold"
-              value={threshold}
-              min={0}
-              max={0.9}
-              step={0.05}
-              display={threshold.toFixed(2)}
-              onChange={setThreshold}
-              hint="Minimum relevance score to include a chunk."
-            />
-            <ParamSlider
-              id="rag-temp"
-              label="Temperature"
-              value={temperature}
-              min={0}
-              max={1}
-              step={0.1}
-              display={temperature.toFixed(1)}
-              onChange={setTemperature}
-              hint="Higher values increase answer creativity."
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ----------------------------- Right: results --------------------------- */}
-      <div className="flex flex-col gap-4 lg:col-span-3 lg:gap-6">
-        {!result && !isRunning && <EmptyState />}
-        {isRunning && !result && <RunningState />}
-
-        {result && (
-          <>
-            <MetricsRow result={result} />
-            <AnswerCard result={result} />
-            <ChunksCard chunks={result.chunks} />
-          </>
-        )}
+          {result && (
+            <>
+              <AnswerPanel result={result} />
+              <ChunksList chunks={result.chunks} />
+            </>
+          )}
+        </main>
       </div>
     </div>
   )
 }
 
 /* -------------------------------------------------------------------------- */
-/*                               Sub-components                                */
+/*                                Top nav bar                                  */
 /* -------------------------------------------------------------------------- */
 
-function ParamSlider({
-  id,
+function TopNav() {
+  return (
+    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 lg:px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-md bg-emerald-600 text-white">
+            <SparklesIcon className="size-4" />
+          </div>
+          <span className="text-sm font-semibold">RAG Playground</span>
+        </div>
+
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <GitBranchIcon className="size-3.5" />
+          <span className="font-mono text-foreground">acme / support-kb</span>
+          <ChevronDownIcon className="size-3.5" />
+        </button>
+
+        <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item}
+              href="#"
+              className={cn(
+                "text-sm transition-colors",
+                item === "Playground"
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {item}
+            </a>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3 md:ml-0">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            index live
+          </span>
+          <div className="size-7 rounded-full bg-emerald-600" aria-hidden />
+        </div>
+      </div>
+    </header>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Config rail                                   */
+/* -------------------------------------------------------------------------- */
+
+function ConfigRail({
+  genModel,
+  setGenModel,
+  embedModel,
+  setEmbedModel,
+  topK,
+  setTopK,
+  temperature,
+  setTemperature,
+  rerank,
+  setRerank,
+}: {
+  genModel: string
+  setGenModel: (v: string) => void
+  embedModel: string
+  setEmbedModel: (v: string) => void
+  topK: number
+  setTopK: (v: number) => void
+  temperature: number
+  setTemperature: (v: number) => void
+  rerank: boolean
+  setRerank: (v: boolean) => void
+}) {
+  return (
+    <section className="flex flex-col gap-5">
+      <RailHeading icon={<SlidersIcon />}>Retrieval config</RailHeading>
+
+      <Field label="Generation model">
+        <input
+          value={genModel}
+          onChange={(e) => setGenModel(e.target.value)}
+          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        />
+      </Field>
+
+      <Field label="Embedding model">
+        <input
+          value={embedModel}
+          onChange={(e) => setEmbedModel(e.target.value)}
+          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        />
+      </Field>
+
+      <Slider
+        label="Top-K chunks"
+        value={topK}
+        min={1}
+        max={10}
+        step={1}
+        display={String(topK)}
+        onChange={setTopK}
+      />
+      <Slider
+        label="Temperature"
+        value={temperature}
+        min={0}
+        max={1}
+        step={0.05}
+        display={temperature.toFixed(2)}
+        onChange={setTemperature}
+      />
+
+      <button
+        type="button"
+        onClick={() => setRerank(!rerank)}
+        className="flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+      >
+        <span className="flex flex-col">
+          <span className="text-sm font-medium">Cohere rerank</span>
+          <span className="text-xs text-muted-foreground">
+            Re-score retrieved chunks
+          </span>
+        </span>
+        <Toggle on={rerank} />
+      </button>
+    </section>
+  )
+}
+
+function KnowledgeBase() {
+  return (
+    <section className="flex flex-col gap-3">
+      <RailHeading icon={<DatabaseIcon className="size-3.5" />}>
+        Knowledge base
+      </RailHeading>
+      <ul className="flex flex-col gap-1">
+        {FILES.map((file) => (
+          <li
+            key={file.name}
+            className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-sm transition-colors hover:bg-muted/50"
+          >
+            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+              {file.name}
+            </span>
+            {file.status === "indexing" ? (
+              <Loader2Icon className="size-3.5 shrink-0 animate-spin text-emerald-600" />
+            ) : (
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                {file.tokens}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                Query bar                                    */
+/* -------------------------------------------------------------------------- */
+
+function QueryBar({
+  query,
+  setQuery,
+  onRun,
+  onKeyDown,
+  isRunning,
+}: {
+  query: string
+  setQuery: (v: string) => void
+  onRun: () => void
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  isRunning: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 pl-3 shadow-sm focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20">
+        <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Ask a question against your indexed sources…"
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        />
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={!query.trim() || isRunning}
+          className="flex shrink-0 items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {isRunning ? (
+            <Loader2Icon className="size-4 animate-spin" />
+          ) : (
+            <CornerDownLeftIcon className="size-4" />
+          )}
+          Run
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {SAMPLE_QUERIES.map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => setQuery(q)}
+            className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-emerald-500/40 hover:text-foreground"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Answer panel                                  */
+/* -------------------------------------------------------------------------- */
+
+function AnswerPanel({ result }: { result: RunResult }) {
+  const [copied, setCopied] = React.useState(false)
+
+  function copy() {
+    const text = result.answer.map((s) => s.text).join("")
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
+  const metrics = [
+    { label: "Latency", value: `${result.latencyMs} ms`, icon: ClockIcon },
+    { label: "Tokens", value: result.tokens.toLocaleString(), icon: CoinsIcon },
+    {
+      label: "Faithfulness",
+      value: `${result.faithfulness}%`,
+      icon: ShieldCheckIcon,
+    },
+    {
+      label: "Answer relevance",
+      value: `${result.relevance}%`,
+      icon: TargetIcon,
+    },
+  ]
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SparklesIcon className="size-4 text-emerald-600" />
+          <h2 className="text-sm font-semibold">Generated answer</h2>
+          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+            {result.model}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={copy}
+          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {copied ? (
+            <CheckIcon className="size-3.5 text-emerald-600" />
+          ) : (
+            <CopyIcon className="size-3.5" />
+          )}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+
+      <p className="mt-4 text-sm leading-7 text-foreground">
+        {result.answer.map((seg, i) => (
+          <React.Fragment key={i}>
+            {seg.text}
+            {seg.cite != null && <Citation n={seg.cite} />}
+          </React.Fragment>
+        ))}
+      </p>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">
+        {metrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
+          >
+            <m.icon className="size-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="font-mono text-sm font-semibold leading-tight">
+                {m.value}
+              </p>
+              <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+                {m.label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Citation({ n }: { n: number }) {
+  return (
+    <span className="mx-0.5 inline-flex size-4 translate-y-[-1px] items-center justify-center rounded bg-emerald-100 align-middle font-mono text-[10px] font-semibold text-emerald-700">
+      {n}
+    </span>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Chunks list                                   */
+/* -------------------------------------------------------------------------- */
+
+function ChunksList({ chunks }: { chunks: Retrieved[] }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <LayersIcon />
+          <h2 className="text-sm font-semibold">Retrieved chunks</h2>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {chunks.length} {chunks.length === 1 ? "source" : "sources"}
+        </span>
+      </div>
+
+      {chunks.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          No chunks crossed the retrieval threshold for this query.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {chunks.map((chunk, idx) => (
+            <li
+              key={chunk.id}
+              className="rounded-xl border border-border bg-card p-4 shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-emerald-100 font-mono text-[11px] font-semibold text-emerald-700">
+                  {idx + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate font-mono text-sm font-medium">
+                      {chunk.source}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {chunk.path} · p.&nbsp;{chunk.page} · {chunk.tokens} tok
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-muted sm:block">
+                    <span
+                      className="block h-full rounded-full bg-emerald-500"
+                      style={{ width: `${Math.round(chunk.score * 100)}%` }}
+                    />
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-emerald-700">
+                    {chunk.score.toFixed(3)}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 pl-8 text-sm leading-6 text-foreground/80">
+                {chunk.text}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Small primitives                               */
+/* -------------------------------------------------------------------------- */
+
+function RailHeading({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="text-muted-foreground">{icon}</span>
+      {children}
+    </div>
+  )
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function Slider({
   label,
   value,
   min,
@@ -423,9 +735,7 @@ function ParamSlider({
   step,
   display,
   onChange,
-  hint,
 }: {
-  id: string
   label: string
   value: number
   min: number
@@ -433,223 +743,92 @@ function ParamSlider({
   step: number
   display: string
   onChange: (v: number) => void
-  hint: string
 }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <Label htmlFor={id}>{label}</Label>
-        <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="font-mono text-sm text-muted-foreground">
           {display}
         </span>
       </div>
       <input
-        id={id}
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-emerald-600"
+        aria-label={label}
       />
-      <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   )
 }
 
-function MetricsRow({ result }: { result: RunResult }) {
-  const metrics = [
-    {
-      label: "Latency",
-      value: `${result.latencyMs} ms`,
-      icon: GaugeIcon,
-    },
-    {
-      label: "Chunks used",
-      value: String(result.chunks.length),
-      icon: LayersIcon,
-    },
-    {
-      label: "Prompt tokens",
-      value: result.promptTokens.toLocaleString(),
-      icon: CoinsIcon,
-    },
-    {
-      label: "Completion tokens",
-      value: result.completionTokens.toLocaleString(),
-      icon: FileTextIcon,
-    },
-  ]
-  return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      {metrics.map((m) => (
-        <Card key={m.label}>
-          <CardContent className="flex items-center gap-3 p-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <m.icon className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs text-muted-foreground">
-                {m.label}
-              </p>
-              <p className="font-mono text-base font-bold text-foreground">
-                {m.value}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
-function AnswerCard({ result }: { result: RunResult }) {
-  const [copied, setCopied] = React.useState(false)
-
-  function copy() {
-    navigator.clipboard.writeText(result.answer).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between pb-3">
-        <div>
-          <CardTitle className="flex items-center gap-2 text-base font-bold">
-            <SparklesIcon className="size-4 text-primary" />
-            Generated Answer
-          </CardTitle>
-          <CardDescription className="mt-1 font-mono text-xs">
-            {result.model} · temp {result.temperature.toFixed(1)} · top_k{" "}
-            {result.topK}
-          </CardDescription>
-        </div>
-        <Button variant="outline" size="sm" onClick={copy}>
-          {copied ? (
-            <>
-              <CheckIcon className="size-3.5" />
-              Copied
-            </>
-          ) : (
-            <>
-              <CopyIcon className="size-3.5" />
-              Copy
-            </>
-          )}
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-foreground">
-          {result.answer}
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ChunksCard({ chunks }: { chunks: Retrieved[] }) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-bold">
-          <DatabaseIcon className="size-4 text-primary" />
-          Retrieved Context
-          <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {chunks.length}
-          </span>
-        </CardTitle>
-        <CardDescription>
-          Source chunks ranked by similarity to the query.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {chunks.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-            No chunks passed the similarity threshold.
-          </p>
-        )}
-        {chunks.map((chunk, idx) => (
-          <div
-            key={chunk.id}
-            className="rounded-lg border border-border bg-muted/30 p-3"
-          >
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[11px] font-bold text-primary">
-                  {idx + 1}
-                </span>
-                <span className="truncate text-sm font-semibold text-foreground">
-                  {chunk.title}
-                </span>
-              </div>
-              <ScoreBadge score={chunk.score} />
-            </div>
-            <p className="mb-2 text-sm leading-relaxed text-muted-foreground">
-              {chunk.text}
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <FileTextIcon className="size-3" />
-              <span className="font-mono">{chunk.source}</span>
-              <Separator orientation="vertical" className="h-3" />
-              <span className="font-mono">{chunk.id}</span>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  const strong = score >= 0.75
-  const medium = score >= 0.6 && score < 0.75
+function Toggle({ on }: { on: boolean }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full px-2 py-0.5 font-mono text-xs font-bold",
-        strong && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-        medium && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-        !strong && !medium && "bg-muted text-muted-foreground"
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+        on ? "bg-emerald-600" : "bg-muted-foreground/30"
       )}
     >
-      {score.toFixed(3)}
+      <span
+        className={cn(
+          "inline-block size-4 translate-x-0.5 rounded-full bg-white transition-transform",
+          on && "translate-x-[18px]"
+        )}
+      />
     </span>
   )
 }
 
-function EmptyState() {
+function SlidersIcon() {
   return (
-    <Card className="flex flex-1 items-center justify-center border-dashed">
-      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <SparklesIcon className="size-6" />
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">
-            Run a query to test retrieval
-          </p>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Enter a question and hit run. You&apos;ll see the generated answer,
-            retrieved source chunks, relevance scores, and run metrics here.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <line x1="4" x2="4" y1="21" y2="14" />
+      <line x1="4" x2="4" y1="10" y2="3" />
+      <line x1="12" x2="12" y1="21" y2="12" />
+      <line x1="12" x2="12" y1="8" y2="3" />
+      <line x1="20" x2="20" y1="21" y2="16" />
+      <line x1="20" x2="20" y1="12" y2="3" />
+      <line x1="2" x2="6" y1="14" y2="14" />
+      <line x1="10" x2="14" y1="8" y2="8" />
+      <line x1="18" x2="22" y1="16" y2="16" />
+    </svg>
   )
 }
 
-function RunningState() {
+function LayersIcon() {
   return (
-    <Card className="flex flex-1 items-center justify-center">
-      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-        <Loader2Icon className="size-6 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">
-          Retrieving context and generating an answer…
-        </p>
-      </CardContent>
-    </Card>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-muted-foreground"
+      aria-hidden
+    >
+      <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+      <path d="M2 12.3a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9a1 1 0 0 0 .59-.92" />
+      <path d="M2 16.3a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9a1 1 0 0 0 .59-.92" />
+    </svg>
   )
 }
