@@ -8,8 +8,6 @@ import {
   CopyIcon,
   CheckIcon,
   SearchIcon,
-  GitBranchIcon,
-  ChevronDownIcon,
   ClockIcon,
   CoinsIcon,
   ShieldCheckIcon,
@@ -19,6 +17,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { PlaygroundNav } from "@/components/playground-nav"
 
 /* -------------------------------------------------------------------------- */
 /*                              Demo knowledge base                            */
@@ -123,8 +122,6 @@ const SAMPLE_QUERIES = [
   "What is the standard SLA for last-mile delivery exceptions?",
   "Which fees apply to cross-border card settlements?",
 ]
-
-const NAV_ITEMS = ["Playground", "Datasets", "Experiments", "Logs", "Settings"]
 
 /* -------------------------------------------------------------------------- */
 /*                            Retrieval simulation                             */
@@ -257,7 +254,7 @@ export function RagPlayground() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <TopNav />
+      <PlaygroundNav active="Playground" />
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* ------------------------------ Left rail ----------------------------- */}
@@ -306,59 +303,6 @@ export function RagPlayground() {
         </main>
       </div>
     </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                Top nav bar                                  */
-/* -------------------------------------------------------------------------- */
-
-function TopNav() {
-  return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 lg:px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-md bg-emerald-600 text-white">
-            <SparklesIcon className="size-4" />
-          </div>
-          <span className="text-sm font-semibold">RAG Playground</span>
-        </div>
-
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-        >
-          <GitBranchIcon className="size-3.5" />
-          <span className="font-mono text-foreground">acme / support-kb</span>
-          <ChevronDownIcon className="size-3.5" />
-        </button>
-
-        <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item}
-              href="#"
-              className={cn(
-                "text-sm transition-colors",
-                item === "Playground"
-                  ? "font-medium text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {item}
-            </a>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-3 md:ml-0">
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            index live
-          </span>
-          <div className="size-7 rounded-full bg-emerald-600" aria-hidden />
-        </div>
-      </div>
-    </header>
   )
 }
 
