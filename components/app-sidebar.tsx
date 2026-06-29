@@ -54,16 +54,16 @@ const data = {
   navMain: [
     {
       title: "Playground",
-      url: "#",
+      url: "/playground",
       icon: <TerminalSquareIcon />,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "RAG Testing",
+          url: "/playground",
         },
         {
-          title: "Starred",
+          title: "History",
           url: "#",
         },
         {
