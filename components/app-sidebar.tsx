@@ -54,13 +54,13 @@ const data = {
   navMain: [
     {
       title: "Playground",
-      url: "/playground",
+      url: "/dashboard",
       icon: <TerminalSquareIcon />,
       isActive: true,
       items: [
         {
           title: "RAG Testing",
-          url: "/playground",
+          url: "/dashboard",
         },
         {
           title: "History",

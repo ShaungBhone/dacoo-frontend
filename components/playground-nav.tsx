@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
-  { label: "Playground", href: "/playground" },
+  { label: "Playground", href: "/dashboard" },
   { label: "Datasets", href: "/datasets" },
   { label: "Experiments", href: "/experiments" },
   { label: "Logs", href: "/logs" },
@@ -22,7 +22,7 @@ export function PlaygroundNav({ active }: { active: string }) {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 lg:px-6">
-        <Link href="/playground" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <SparklesIcon className="size-4" />
           </div>
