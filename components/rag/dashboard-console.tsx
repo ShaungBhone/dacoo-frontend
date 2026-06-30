@@ -17,10 +17,12 @@ import { ChunksList } from "@/components/rag/chunks-list"
 import { useRag } from "@/components/rag/rag-context"
 import {
   buildPromptPreview,
+  computeContextBudget,
   retrieve,
   streamText,
   synthesizeStructuredAnswer,
   tokenize,
+  type ContextBudget,
   type RunResult,
 } from "@/components/rag/retrieval"
 
@@ -29,6 +31,7 @@ export function DashboardConsole() {
   const [isRunning, setIsRunning] = React.useState(false)
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [result, setResult] = React.useState<RunResult | null>(null)
+  const [runBudget, setRunBudget] = React.useState<ContextBudget | null>(null)
   const [streamedText, setStreamedText] = React.useState("")
   const stopStreamRef = React.useRef<(() => void) | null>(null)
 
@@ -98,6 +101,14 @@ export function DashboardConsole() {
       genModel,
       activeTemplate.system
     )
+
+    const budget = computeContextBudget(
+      query,
+      chunks,
+      genModel,
+      activeTemplate.system
+    )
+    setRunBudget(budget)
 
     const pendingResult: RunResult = {
       query,
@@ -182,6 +193,7 @@ export function DashboardConsole() {
             result={result}
             isStreaming={isStreaming}
             streamedText={streamedText}
+            contextBudget={runBudget ?? undefined}
           />
           <ChunksList chunks={result.chunks} />
         </>
