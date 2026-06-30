@@ -63,12 +63,24 @@ const data = {
           url: "/dashboard",
         },
         {
-          title: "History",
-          url: "#",
+          title: "Datasets",
+          url: "/datasets",
+        },
+        {
+          title: "Experiments",
+          url: "/experiments",
+        },
+        {
+          title: "Logs",
+          url: "/logs",
+        },
+        {
+          title: "Docs",
+          url: "/docs",
         },
         {
           title: "Settings",
-          url: "#",
+          url: "/settings",
         },
       ],
     },
