@@ -15,6 +15,10 @@ import {
   DatabaseIcon,
   CornerDownLeftIcon,
   TerminalIcon,
+  MessageCircleIcon,
+  BarChart2Icon,
+  ListChecksIcon,
+  AlignLeftIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -238,10 +242,69 @@ function synthesizeStructuredAnswer(
   }
 }
 
-/** Build the raw prompt string shown in the Prompt tab. */
-function buildPromptPreview(query: string, chunks: Retrieved[], model: string): string {
-  const system = `You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so.`
+/* -------------------------------------------------------------------------- */
+/*                            Prompt templates                                 */
+/* -------------------------------------------------------------------------- */
 
+type PromptTemplate = {
+  id: string
+  label: string
+  description: string
+  system: string
+}
+
+export const PROMPT_TEMPLATES: PromptTemplate[] = [
+  {
+    id: "default",
+    label: "Default assistant",
+    description: "Strict grounding — answer only from context, admit gaps.",
+    system:
+      "You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so.",
+  },
+  {
+    id: "support",
+    label: "Customer support",
+    description: "Friendly tone, actionable next steps, escalation path.",
+    system:
+      "You are a friendly customer support agent. Use the context below to answer the user's question clearly and empathetically. If you cannot resolve it, suggest escalating to a human agent.",
+  },
+  {
+    id: "analyst",
+    label: "Data analyst",
+    description: "Precise, citation-heavy, structured with numbers.",
+    system:
+      "You are a precise data analyst. Provide a structured answer using only the figures, thresholds, and facts stated in the context below. Cite each claim with the chunk it came from. Avoid inference beyond what the data supports.",
+  },
+  {
+    id: "compliance",
+    label: "Compliance officer",
+    description: "Conservative, policy-first, flags missing coverage.",
+    system:
+      "You are a compliance officer. Answer using only the policies and regulations present in the context below. If a specific scenario is not explicitly covered by the provided policy, state that clearly and recommend seeking formal legal or compliance review.",
+  },
+  {
+    id: "onboarding",
+    label: "Onboarding guide",
+    description: "Step-by-step instructions for new team members.",
+    system:
+      "You are an onboarding guide for new employees. Translate the context below into clear, numbered steps that someone unfamiliar with the domain can follow. Use plain language and avoid jargon.",
+  },
+  {
+    id: "concise",
+    label: "Concise summary",
+    description: "One-paragraph TL;DR, no bullets.",
+    system:
+      "You are a summarization assistant. Produce a single concise paragraph that captures the key answer from the context below. Do not use bullet points. Prioritize brevity without losing accuracy.",
+  },
+]
+
+/** Build the raw prompt string shown in the Prompt tab. */
+function buildPromptPreview(
+  query: string,
+  chunks: Retrieved[],
+  model: string,
+  systemPrompt: string
+): string {
   const context = chunks
     .map(
       (c, i) =>
@@ -251,7 +314,7 @@ function buildPromptPreview(query: string, chunks: Retrieved[], model: string): 
 
   return [
     `[system]`,
-    system,
+    systemPrompt,
     ``,
     `[context]`,
     context,
@@ -313,9 +376,12 @@ export function RagPlayground() {
   const [isRunning, setIsRunning] = React.useState(false)
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [result, setResult] = React.useState<RunResult | null>(null)
-  // The partial text currently visible during streaming.
   const [streamedText, setStreamedText] = React.useState("")
   const stopStreamRef = React.useRef<(() => void) | null>(null)
+  const [templateId, setTemplateId] = React.useState(PROMPT_TEMPLATES[0].id)
+
+  const activeTemplate =
+    PROMPT_TEMPLATES.find((t) => t.id === templateId) ?? PROMPT_TEMPLATES[0]
 
   const runQuery = React.useCallback(async () => {
     if (!query.trim() || isRunning) return
@@ -341,7 +407,12 @@ export function RagPlayground() {
     const top = chunks[0]?.score ?? 0
 
     const structured = synthesizeStructuredAnswer(query, chunks)
-    const promptPreview = buildPromptPreview(query, chunks, genModel)
+    const promptPreview = buildPromptPreview(
+      query,
+      chunks,
+      genModel,
+      activeTemplate.system
+    )
 
     const pendingResult: RunResult = {
       query,
@@ -374,7 +445,7 @@ export function RagPlayground() {
         setStreamedText(fullText)
       }
     )
-  }, [query, topK, rerank, genModel, isRunning])
+  }, [query, topK, rerank, genModel, isRunning, activeTemplate])
 
   // Run the default query once on mount for an immediately useful view.
   React.useEffect(() => {
@@ -434,6 +505,8 @@ export function RagPlayground() {
             onRun={runQuery}
             onKeyDown={handleKeyDown}
             isRunning={isRunning}
+            templateId={templateId}
+            setTemplateId={setTemplateId}
           />
 
           {result && (
@@ -575,15 +648,59 @@ function QueryBar({
   onRun,
   onKeyDown,
   isRunning,
+  templateId,
+  setTemplateId,
 }: {
   query: string
   setQuery: (v: string) => void
   onRun: () => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   isRunning: boolean
+  templateId: string
+  setTemplateId: (id: string) => void
 }) {
+  const active = PROMPT_TEMPLATES.find((t) => t.id === templateId) ?? PROMPT_TEMPLATES[0]
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Prompt template picker */}
+      <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Prompt template
+          </p>
+          <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+            {active.label}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {PROMPT_TEMPLATES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTemplateId(t.id)}
+              title={t.description}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                t.id === templateId
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground"
+              )}
+            >
+              <TemplateIcon id={t.id} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Active template system prompt preview */}
+        <p className="mt-1 rounded-md bg-muted/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+          {active.system}
+        </p>
+      </div>
+
+      {/* Search input */}
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 pl-3 shadow-sm focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         <input
@@ -608,6 +725,7 @@ function QueryBar({
         </button>
       </div>
 
+      {/* Sample queries */}
       <div className="flex flex-wrap gap-2">
         {SAMPLE_QUERIES.map((q) => (
           <button
@@ -622,6 +740,24 @@ function QueryBar({
       </div>
     </div>
   )
+}
+
+/** Small icon per template id — maps each template to a relevant lucide icon. */
+function TemplateIcon({ id }: { id: string }) {
+  switch (id) {
+    case "support":
+      return <MessageCircleIcon className="size-3" />
+    case "analyst":
+      return <BarChart2Icon className="size-3" />
+    case "compliance":
+      return <ShieldCheckIcon className="size-3" />
+    case "onboarding":
+      return <ListChecksIcon className="size-3" />
+    case "concise":
+      return <AlignLeftIcon className="size-3" />
+    default:
+      return <SparklesIcon className="size-3" />
+  }
 }
 
 /* -------------------------------------------------------------------------- */
