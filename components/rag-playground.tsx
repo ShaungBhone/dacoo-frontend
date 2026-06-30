@@ -26,7 +26,6 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { PlaygroundNav } from "@/components/playground-nav"
 import {
   Tooltip,
   TooltipContent,
@@ -502,9 +501,7 @@ export function RagPlayground() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <PlaygroundNav active="Playground" />
-
+    <div className="flex flex-1 flex-col bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* ------------------------------ Left rail ----------------------------- */}
         <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-64">

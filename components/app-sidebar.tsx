@@ -63,12 +63,16 @@ const data = {
           url: "/playground",
         },
         {
-          title: "History",
-          url: "#",
+          title: "Datasets",
+          url: "/datasets",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Experiments",
+          url: "/experiments",
+        },
+        {
+          title: "Logs",
+          url: "/logs",
         },
       ],
     },
@@ -93,12 +97,12 @@ const data = {
     },
     {
       title: "Documentation",
-      url: "#",
+      url: "/docs",
       icon: <BookOpenIcon />,
       items: [
         {
           title: "Introduction",
-          url: "#",
+          url: "/docs",
         },
         {
           title: "Get Started",
@@ -116,12 +120,12 @@ const data = {
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: <Settings2Icon />,
       items: [
         {
           title: "General",
-          url: "#",
+          url: "/settings",
         },
         {
           title: "Team",
