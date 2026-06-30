@@ -14,6 +14,7 @@ import {
   TargetIcon,
   DatabaseIcon,
   CornerDownLeftIcon,
+  TerminalIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -163,32 +164,132 @@ function retrieve(query: string, topK: number): Retrieved[] {
     .slice(0, topK)
 }
 
-type AnswerSegment = { text: string; cite?: number }
+/* -------------------------------------------------------------------------- */
+/*                         Structured report builder                           */
+/* -------------------------------------------------------------------------- */
 
-function synthesizeAnswer(chunks: Retrieved[]): AnswerSegment[] {
+/** A single section of the structured report. */
+type ReportSection = {
+  heading: string
+  bullets: Array<{ text: string; cite?: number }>
+}
+
+type StructuredAnswer = {
+  summary: { text: string; cite?: number }
+  sections: ReportSection[]
+  sourceNote: string
+}
+
+function synthesizeStructuredAnswer(
+  query: string,
+  chunks: Retrieved[]
+): StructuredAnswer {
   if (chunks.length === 0) {
-    return [
-      {
-        text: "I could not find anything in the indexed sources that answers this question. Try rephrasing the query, raising Top-K, or re-indexing your knowledge base.",
+    return {
+      summary: {
+        text: "No relevant content was found in the indexed sources for this query. Try rephrasing the question, increasing Top-K, or re-indexing your knowledge base.",
       },
-    ]
+      sections: [],
+      sourceNote: "",
+    }
   }
 
-  const segments: AnswerSegment[] = []
-  chunks.slice(0, 3).forEach((chunk, idx) => {
-    const sentences = chunk.text
+  const primary = chunks[0]
+  const rest = chunks.slice(1)
+
+  // Pull the first two sentences from the top chunk as the summary.
+  const primarySentences = primary.text
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const summaryText = primarySentences.slice(0, 2).join(" ")
+
+  // Build "Key findings" bullets from all retrieved chunks.
+  const findingBullets = chunks.slice(0, 4).map((c, idx) => {
+    const sentences = c.text
       .split(/(?<=\.)\s+/)
       .map((s) => s.trim())
       .filter(Boolean)
-    const claim = sentences.slice(0, idx === 0 ? 2 : 1).join(" ")
-    segments.push({ text: idx === 0 ? claim : ` ${claim}`, cite: idx + 1 })
+    return { text: sentences[0] ?? c.text, cite: idx + 1 }
   })
-  return segments
+
+  // Build an "Additional context" section from the remaining chunks if any.
+  const additionalBullets = rest.slice(0, 2).map((c, idx) => {
+    const sentences = c.text
+      .split(/(?<=\.)\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    return { text: sentences[1] ?? sentences[0] ?? c.text, cite: idx + 2 }
+  })
+
+  const sections: ReportSection[] = [
+    { heading: "Key findings", bullets: findingBullets },
+    ...(additionalBullets.length > 0
+      ? [{ heading: "Additional context", bullets: additionalBullets }]
+      : []),
+  ]
+
+  const srcNames = [...new Set(chunks.map((c) => c.source))].join(", ")
+
+  return {
+    summary: { text: summaryText, cite: 1 },
+    sections,
+    sourceNote: `Based on ${chunks.length} chunk${chunks.length > 1 ? "s" : ""} from: ${srcNames}`,
+  }
+}
+
+/** Build the raw prompt string shown in the Prompt tab. */
+function buildPromptPreview(query: string, chunks: Retrieved[], model: string): string {
+  const system = `You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so.`
+
+  const context = chunks
+    .map(
+      (c, i) =>
+        `--- Chunk ${i + 1} | ${c.source} | ${c.path} | p.${c.page} ---\n${c.text}`
+    )
+    .join("\n\n")
+
+  return [
+    `[system]`,
+    system,
+    ``,
+    `[context]`,
+    context,
+    ``,
+    `[user]`,
+    query,
+    ``,
+    `[model: ${model}]`,
+  ].join("\n")
+}
+
+/** Stream the full report text word-by-word via an interval; returns a cleanup fn. */
+function streamText(
+  fullText: string,
+  onChunk: (partial: string) => void,
+  onDone: () => void,
+  wordsPerTick = 4,
+  intervalMs = 28
+): () => void {
+  const words = fullText.split(" ")
+  let index = 0
+  const id = setInterval(() => {
+    index += wordsPerTick
+    if (index >= words.length) {
+      onChunk(fullText)
+      onDone()
+      clearInterval(id)
+    } else {
+      onChunk(words.slice(0, index).join(" "))
+    }
+  }, intervalMs)
+  return () => clearInterval(id)
 }
 
 type RunResult = {
   query: string
-  answer: AnswerSegment[]
+  structured: StructuredAnswer
+  promptPreview: string
   chunks: Retrieved[]
   latencyMs: number
   tokens: number
@@ -196,6 +297,7 @@ type RunResult = {
   relevance: number
   model: string
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*                                 Component                                   */
@@ -209,35 +311,69 @@ export function RagPlayground() {
   const [temperature, setTemperature] = React.useState(0.2)
   const [rerank, setRerank] = React.useState(true)
   const [isRunning, setIsRunning] = React.useState(false)
+  const [isStreaming, setIsStreaming] = React.useState(false)
   const [result, setResult] = React.useState<RunResult | null>(null)
+  // The partial text currently visible during streaming.
+  const [streamedText, setStreamedText] = React.useState("")
+  const stopStreamRef = React.useRef<(() => void) | null>(null)
 
   const runQuery = React.useCallback(async () => {
     if (!query.trim() || isRunning) return
+
+    // Cancel any in-progress stream from a prior run.
+    stopStreamRef.current?.()
     setIsRunning(true)
+    setIsStreaming(false)
+    setStreamedText("")
+    setResult(null)
 
     const start = performance.now()
     let chunks = retrieve(query, topK)
     if (rerank) {
       chunks = [...chunks].sort((a, b) => b.score - a.score)
     }
-    const answer = synthesizeAnswer(chunks)
 
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 700))
+    // Brief retrieval latency, then start streaming.
+    await new Promise((r) => setTimeout(r, 400 + Math.random() * 300))
 
     const latencyMs = Math.round(performance.now() - start)
     const usedTokens = chunks.reduce((sum, c) => sum + c.tokens, 0)
     const top = chunks[0]?.score ?? 0
-    setResult({
+
+    const structured = synthesizeStructuredAnswer(query, chunks)
+    const promptPreview = buildPromptPreview(query, chunks, genModel)
+
+    const pendingResult: RunResult = {
       query,
-      answer,
+      structured,
+      promptPreview,
       chunks,
       latencyMs,
       tokens: usedTokens + 1300 + tokenize(query).length * 4,
       faithfulness: chunks.length ? Math.round((0.82 + top * 0.13) * 100) : 0,
       relevance: chunks.length ? Math.round((0.7 + top * 0.2) * 100) : 0,
       model: genModel,
-    })
+    }
+
+    // Build the full prose string to stream (summary + all bullet texts joined).
+    const allBullets = structured.sections.flatMap((s) => s.bullets)
+    const fullText = [
+      structured.summary.text,
+      ...allBullets.map((b) => b.text),
+    ].join(" ")
+
     setIsRunning(false)
+    setIsStreaming(true)
+    setResult(pendingResult)
+
+    stopStreamRef.current = streamText(
+      fullText,
+      (partial) => setStreamedText(partial),
+      () => {
+        setIsStreaming(false)
+        setStreamedText(fullText)
+      }
+    )
   }, [query, topK, rerank, genModel, isRunning])
 
   // Run the default query once on mount for an immediately useful view.
@@ -302,7 +438,11 @@ export function RagPlayground() {
 
           {result && (
             <>
-              <AnswerPanel result={result} />
+              <AnswerPanel
+                result={result}
+                isStreaming={isStreaming}
+                streamedText={streamedText}
+              />
               <ChunksList chunks={result.chunks} />
             </>
           )}
@@ -488,11 +628,29 @@ function QueryBar({
 /*                               Answer panel                                  */
 /* -------------------------------------------------------------------------- */
 
-function AnswerPanel({ result }: { result: RunResult }) {
+function AnswerPanel({
+  result,
+  isStreaming,
+  streamedText,
+}: {
+  result: RunResult
+  isStreaming: boolean
+  streamedText: string
+}) {
+  const [tab, setTab] = React.useState<"answer" | "prompt">("answer")
   const [copied, setCopied] = React.useState(false)
 
+  // Reset to answer tab when a new result arrives.
+  React.useEffect(() => {
+    setTab("answer")
+  }, [result])
+
   function copy() {
-    const text = result.answer.map((s) => s.text).join("")
+    const allBullets = result.structured.sections.flatMap((s) => s.bullets)
+    const text = [
+      result.structured.summary.text,
+      ...allBullets.map((b) => b.text),
+    ].join("\n")
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
@@ -502,73 +660,171 @@ function AnswerPanel({ result }: { result: RunResult }) {
   const metrics = [
     { label: "Latency", value: `${result.latencyMs} ms`, icon: ClockIcon },
     { label: "Tokens", value: result.tokens.toLocaleString(), icon: CoinsIcon },
-    {
-      label: "Faithfulness",
-      value: `${result.faithfulness}%`,
-      icon: ShieldCheckIcon,
-    },
-    {
-      label: "Answer relevance",
-      value: `${result.relevance}%`,
-      icon: TargetIcon,
-    },
+    { label: "Faithfulness", value: `${result.faithfulness}%`, icon: ShieldCheckIcon },
+    { label: "Answer relevance", value: `${result.relevance}%`, icon: TargetIcon },
   ]
 
+  // Words streamed so far — used to show only the visible portion in structured sections.
+  const streamedWords = new Set(streamedText.split(" ").filter(Boolean))
+
+  function isTextVisible(text: string): boolean {
+    if (!isStreaming) return true
+    const firstWord = text.split(" ")[0]
+    return streamedWords.has(firstWord ?? "")
+  }
+
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SparklesIcon className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold">Generated answer</h2>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+        <div className="flex items-center gap-1">
+          {(["answer", "prompt"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                tab === t
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t === "answer" ? (
+                <SparklesIcon className="size-3.5" />
+              ) : (
+                <TerminalIcon className="size-3.5" />
+              )}
+              {t === "answer" ? "Answer" : "Prompt"}
+            </button>
+          ))}
+          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
             {result.model}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={copy}
-          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {copied ? (
-            <CheckIcon className="size-3.5 text-primary" />
-          ) : (
-            <CopyIcon className="size-3.5" />
-          )}
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
 
-      <TooltipProvider delayDuration={100}>
-        <p className="mt-4 text-sm leading-7 text-foreground">
-          {result.answer.map((seg, i) => (
-            <React.Fragment key={i}>
-              {seg.text}
-              {seg.cite != null && (
-                <Citation n={seg.cite} chunk={result.chunks[seg.cite - 1]} />
-              )}
-            </React.Fragment>
-          ))}
-        </p>
-      </TooltipProvider>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
+        {tab === "answer" && (
+          <button
+            type="button"
+            onClick={copy}
+            disabled={isStreaming}
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
           >
-            <m.icon className="size-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0">
-              <p className="font-mono text-sm font-semibold leading-tight">
-                {m.value}
-              </p>
-              <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
-                {m.label}
-              </p>
-            </div>
-          </div>
-        ))}
+            {copied ? (
+              <CheckIcon className="size-3.5 text-primary" />
+            ) : (
+              <CopyIcon className="size-3.5" />
+            )}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        )}
       </div>
+
+      {/* Answer tab */}
+      {tab === "answer" && (
+        <div className="px-5 py-5">
+          <TooltipProvider delayDuration={100}>
+            {/* Summary */}
+            <p className="text-sm leading-7 text-foreground">
+              {result.structured.summary.text}
+              {isStreaming && (
+                <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse rounded-sm bg-primary" />
+              )}
+              {result.structured.summary.cite != null && !isStreaming && (
+                <Citation
+                  n={result.structured.summary.cite}
+                  chunk={result.chunks[result.structured.summary.cite - 1]}
+                />
+              )}
+            </p>
+
+            {/* Sections — fade in progressively as stream covers their words */}
+            {result.structured.sections.map((section) => (
+              <div
+                key={section.heading}
+                className={cn(
+                  "mt-5 transition-opacity duration-300",
+                  isStreaming && !isTextVisible(section.bullets[0]?.text ?? "")
+                    ? "opacity-0"
+                    : "opacity-100"
+                )}
+              >
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {section.heading}
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {section.bullets.map((bullet, bi) => (
+                    <li
+                      key={bi}
+                      className={cn(
+                        "flex items-start gap-2 text-sm leading-6 text-foreground/90 transition-opacity duration-200",
+                        isStreaming && !isTextVisible(bullet.text)
+                          ? "opacity-0"
+                          : "opacity-100"
+                      )}
+                    >
+                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/60" />
+                      <span>
+                        {bullet.text}
+                        {bullet.cite != null && !isStreaming && (
+                          <Citation
+                            n={bullet.cite}
+                            chunk={result.chunks[bullet.cite - 1]}
+                          />
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            {/* Source note */}
+            {result.structured.sourceNote && !isStreaming && (
+              <p className="mt-4 text-xs text-muted-foreground">
+                {result.structured.sourceNote}
+              </p>
+            )}
+          </TooltipProvider>
+
+          {/* Metrics — only shown once streaming finishes */}
+          <div
+            className={cn(
+              "mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 transition-opacity duration-500 md:grid-cols-4",
+              isStreaming ? "opacity-0" : "opacity-100"
+            )}
+          >
+            {metrics.map((m) => (
+              <div
+                key={m.label}
+                className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
+              >
+                <m.icon className="size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="font-mono text-sm font-semibold leading-tight">
+                    {m.value}
+                  </p>
+                  <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {m.label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prompt tab */}
+      {tab === "prompt" && (
+        <div className="px-5 py-5">
+          <p className="mb-3 text-xs text-muted-foreground text-pretty">
+            The exact context window sent to the model — system prompt, retrieved chunks, and user query.
+          </p>
+          <pre className="overflow-x-auto rounded-lg border border-border bg-muted/50 p-4 font-mono text-xs leading-6 text-foreground/80 whitespace-pre-wrap break-words">
+            {result.promptPreview}
+          </pre>
+        </div>
+      )}
     </div>
   )
 }
