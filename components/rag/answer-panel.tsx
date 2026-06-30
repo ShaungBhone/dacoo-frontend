@@ -62,12 +62,12 @@ export function AnswerPanel({
     },
     {
       label: "Faithfulness",
-      value: `${result.faithfulness}%`,
+      value: result.faithfulness != null ? `${result.faithfulness}%` : "—",
       icon: ShieldCheckIcon,
     },
     {
       label: "Answer relevance",
-      value: `${result.relevance}%`,
+      value: result.relevance != null ? `${result.relevance}%` : "—",
       icon: TargetIcon,
     },
   ]

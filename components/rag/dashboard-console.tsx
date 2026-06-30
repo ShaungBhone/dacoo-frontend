@@ -15,13 +15,13 @@ import {
 import { AnswerPanel } from "@/components/rag/answer-panel"
 import { ChunksList } from "@/components/rag/chunks-list"
 import { useRag } from "@/components/rag/rag-context"
+import { useActiveOrganization } from "@/hooks/use-active-organization"
+import { runDatasetQuery } from "@/components/rag/api"
+import { ApiError } from "@/lib/api"
 import {
   buildPromptPreview,
   computeContextBudget,
-  retrieve,
   streamText,
-  synthesizeStructuredAnswer,
-  tokenize,
   type ContextBudget,
   type RunResult,
 } from "@/components/rag/retrieval"
@@ -33,6 +33,7 @@ export function DashboardConsole() {
   const [result, setResult] = React.useState<RunResult | null>(null)
   const [runBudget, setRunBudget] = React.useState<ContextBudget | null>(null)
   const [streamedText, setStreamedText] = React.useState("")
+  const [error, setError] = React.useState<string | null>(null)
   const stopStreamRef = React.useRef<(() => void) | null>(null)
 
   const [templates, setTemplates] =
@@ -41,8 +42,12 @@ export function DashboardConsole() {
   const [templateDialog, setTemplateDialog] =
     React.useState<TemplateDialogState>(null)
 
+  const organization = useActiveOrganization()
   const {
-    config: { genModel, topK, rerank },
+    config: { genModel },
+    datasetId,
+    datasets,
+    isLoadingDatasets,
   } = useRag()
 
   const activeTemplate =
@@ -74,78 +79,87 @@ export function DashboardConsole() {
   }
 
   const runQuery = React.useCallback(async () => {
-    if (!query.trim() || isRunning) return
+    if (!query.trim() || isRunning || !organization || !datasetId) return
 
     stopStreamRef.current?.()
     setIsRunning(true)
     setIsStreaming(false)
     setStreamedText("")
     setResult(null)
+    setError(null)
 
-    const start = performance.now()
-    let chunks = retrieve(query, topK)
-    if (rerank) {
-      chunks = [...chunks].sort((a, b) => b.score - a.score)
-    }
+    try {
+      const response = await runDatasetQuery(organization.id, datasetId, {
+        query,
+        system_prompt: activeTemplate.system,
+        model: genModel,
+      })
 
-    await new Promise((r) => setTimeout(r, 400 + Math.random() * 300))
+      const budget = computeContextBudget(
+        query,
+        response.chunks,
+        genModel,
+        activeTemplate.system
+      )
+      setRunBudget(budget)
 
-    const latencyMs = Math.round(performance.now() - start)
-    const usedTokens = chunks.reduce((sum, c) => sum + c.tokens, 0)
-    const top = chunks[0]?.score ?? 0
+      const promptPreview = buildPromptPreview(
+        query,
+        response.chunks,
+        genModel,
+        activeTemplate.system
+      )
 
-    const structured = synthesizeStructuredAnswer(query, chunks)
-    const promptPreview = buildPromptPreview(
-      query,
-      chunks,
-      genModel,
-      activeTemplate.system
-    )
+      const allBullets = response.structured.sections.flatMap(
+        (s) => s.bullets
+      )
+      const fullText = [
+        response.structured.summary.text,
+        ...allBullets.map((b) => b.text),
+      ].join(" ")
 
-    const budget = computeContextBudget(
-      query,
-      chunks,
-      genModel,
-      activeTemplate.system
-    )
-    setRunBudget(budget)
-
-    const pendingResult: RunResult = {
-      query,
-      structured,
-      promptPreview,
-      chunks,
-      latencyMs,
-      tokens: usedTokens + 1300 + tokenize(query).length * 4,
-      faithfulness: chunks.length ? Math.round((0.82 + top * 0.13) * 100) : 0,
-      relevance: chunks.length ? Math.round((0.7 + top * 0.2) * 100) : 0,
-      model: genModel,
-    }
-
-    const allBullets = structured.sections.flatMap((s) => s.bullets)
-    const fullText = [
-      structured.summary.text,
-      ...allBullets.map((b) => b.text),
-    ].join(" ")
-
-    setIsRunning(false)
-    setIsStreaming(true)
-    setResult(pendingResult)
-
-    stopStreamRef.current = streamText(
-      fullText,
-      (partial) => setStreamedText(partial),
-      () => {
-        setIsStreaming(false)
-        setStreamedText(fullText)
+      const topScore = response.chunks[0]?.score
+      const pendingResult: RunResult = {
+        query,
+        structured: response.structured,
+        promptPreview,
+        chunks: response.chunks,
+        latencyMs: response.latencyMs,
+        tokens: response.tokens,
+        faithfulness:
+          topScore != null ? Math.round((0.82 + topScore * 0.13) * 100) : null,
+        relevance:
+          topScore != null ? Math.round((0.7 + topScore * 0.2) * 100) : null,
+        model: response.model,
       }
-    )
-  }, [query, isRunning, activeTemplate, genModel, topK, rerank])
 
+      setIsRunning(false)
+      setIsStreaming(true)
+      setResult(pendingResult)
+
+      stopStreamRef.current = streamText(
+        fullText,
+        (partial) => setStreamedText(partial),
+        () => {
+          setIsStreaming(false)
+          setStreamedText(fullText)
+        }
+      )
+    } catch (err) {
+      setIsRunning(false)
+      setError(
+        err instanceof ApiError ? err.message : "The query failed. Try again."
+      )
+    }
+  }, [query, isRunning, organization, datasetId, activeTemplate, genModel])
+
+  const hasAutoRun = React.useRef(false)
   React.useEffect(() => {
+    if (hasAutoRun.current || !organization || !datasetId) return
+    hasAutoRun.current = true
     runQuery()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [organization, datasetId])
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const native = e.nativeEvent as unknown as {
@@ -171,21 +185,34 @@ export function DashboardConsole() {
         </p>
       </header>
 
-      <QueryBar
-        query={query}
-        setQuery={setQuery}
-        onRun={runQuery}
-        onKeyDown={handleKeyDown}
-        isRunning={isRunning}
-        templates={templates}
-        templateId={templateId}
-        setTemplateId={setTemplateId}
-        onAddTemplate={() => setTemplateDialog({ mode: "add" })}
-        onEditTemplate={(template) =>
-          setTemplateDialog({ mode: "edit", template })
-        }
-        onDeleteTemplate={deleteTemplate}
-      />
+      {!isLoadingDatasets && datasets.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          No datasets yet. Create one from the Datasets page before running a
+          query.
+        </p>
+      ) : (
+        <QueryBar
+          query={query}
+          setQuery={setQuery}
+          onRun={runQuery}
+          onKeyDown={handleKeyDown}
+          isRunning={isRunning}
+          templates={templates}
+          templateId={templateId}
+          setTemplateId={setTemplateId}
+          onAddTemplate={() => setTemplateDialog({ mode: "add" })}
+          onEditTemplate={(template) =>
+            setTemplateDialog({ mode: "edit", template })
+          }
+          onDeleteTemplate={deleteTemplate}
+        />
+      )}
+
+      {error && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       {result && (
         <>
