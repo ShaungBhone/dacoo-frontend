@@ -254,3 +254,52 @@ export type RunResult = {
   relevance: number
   model: string
 }
+
+// Context limits per model (in tokens)
+export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
+  "gpt-4o": 128_000,
+  "gpt-4o-mini": 128_000,
+  "gpt-4-turbo": 128_000,
+  "gpt-4": 8_192,
+  "gpt-3.5-turbo": 16_385,
+  "claude-3-5-sonnet": 200_000,
+  "claude-3-haiku": 200_000,
+  "claude-3-opus": 200_000,
+  "gemini-1.5-pro": 1_048_576,
+  "gemini-1.5-flash": 1_048_576,
+}
+
+export const DEFAULT_CONTEXT_LIMIT = 128_000
+
+export type ContextBudget = {
+  systemTokens: number
+  chunkTokens: number
+  queryTokens: number
+  usedTokens: number
+  limitTokens: number
+  pct: number
+  isOver: boolean
+}
+
+export function computeContextBudget(
+  query: string,
+  chunks: Doc[],
+  model: string,
+  systemPrompt: string
+): ContextBudget {
+  const systemTokens = Math.ceil(systemPrompt.split(/\s+/).length * 1.35)
+  const chunkTokens = chunks.reduce((sum, c) => sum + c.tokens, 0)
+  const queryTokens = Math.max(4, Math.ceil(tokenize(query).length * 1.35))
+  const usedTokens = systemTokens + chunkTokens + queryTokens
+  const limitTokens = MODEL_CONTEXT_LIMITS[model] ?? DEFAULT_CONTEXT_LIMIT
+  const pct = Math.min(1, usedTokens / limitTokens)
+  return {
+    systemTokens,
+    chunkTokens,
+    queryTokens,
+    usedTokens,
+    limitTokens,
+    pct,
+    isOver: usedTokens > limitTokens,
+  }
+}
