@@ -23,6 +23,7 @@ import {
   DatabaseIcon,
   FlaskConicalIcon,
   ScrollTextIcon,
+  BotIcon,
 } from "lucide-react"
 
 // This is sample data.
@@ -51,6 +52,7 @@ const data = {
   ],
   navMain: [
     { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
+    { title: "Agents", url: "/agents", icon: <BotIcon /> },
     { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
     { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
     { title: "Logs", url: "/logs", icon: <ScrollTextIcon /> },
