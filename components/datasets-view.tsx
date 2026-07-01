@@ -20,9 +20,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-<<<<<<< HEAD
 import { ApiError } from "@/lib/api"
-import { PlaygroundNav } from "@/components/playground-nav"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import {
   createDataset,
@@ -34,8 +32,6 @@ import {
   type DocStatus,
   type DocumentSummary,
 } from "@/components/rag/api"
-=======
->>>>>>> 8769175 (submit form)
 
 const POLL_INTERVAL_MS = 2500
 const ALLOWED_EXTENSIONS = ".pdf,.md,.markdown,.txt,.mdx,.csv,.json"

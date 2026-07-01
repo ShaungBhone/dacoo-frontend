@@ -17,14 +17,6 @@ import {
 } from "lucide-react"
 
 import {
-<<<<<<< HEAD
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import type { ContextBudget, Retrieved, RunResult } from "@/components/rag/retrieval"
-=======
   ChainOfThought,
   ChainOfThoughtContent,
   ChainOfThoughtHeader,
@@ -73,7 +65,6 @@ import type {
   Retrieved,
   RunResult,
 } from "@/components/rag/retrieval"
->>>>>>> 8769175 (submit form)
 
 export function AnswerPanel({
   result,
@@ -453,90 +444,6 @@ function ContextBudgetMeter({
         </span>
       </div>
 
-<<<<<<< HEAD
-      {tab === "prompt" && (
-        <div className="px-5 py-5">
-          <p className="mb-3 text-xs text-muted-foreground text-pretty">
-            The exact context window sent to the model — system prompt,
-            retrieved chunks, and user query.
-          </p>
-
-          {contextBudget && (
-            <div
-              className={cn(
-                "mb-4 flex flex-col gap-2 rounded-lg border px-3 py-3",
-                contextBudget.isOver
-                  ? "border-destructive/40 bg-destructive/5"
-                  : contextBudget.pct > 0.8
-                    ? "border-amber-500/40 bg-amber-500/5"
-                    : "border-border bg-muted/30"
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  {contextBudget.isOver && (
-                    <TriangleAlertIcon className="size-3.5 text-destructive" />
-                  )}
-                  <span
-                    className={cn(
-                      "text-xs font-semibold",
-                      contextBudget.isOver
-                        ? "text-destructive"
-                        : contextBudget.pct > 0.8
-                          ? "text-amber-600 dark:text-amber-400"
-                          : "text-foreground"
-                    )}
-                  >
-                    {contextBudget.isOver
-                      ? "Context window exceeded"
-                      : "Context window usage"}
-                  </span>
-                </div>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {contextBudget.usedTokens.toLocaleString()} /{" "}
-                  {contextBudget.limitTokens.toLocaleString()} tok
-                </span>
-              </div>
-
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-300",
-                    contextBudget.isOver
-                      ? "bg-destructive"
-                      : contextBudget.pct > 0.8
-                        ? "bg-amber-500"
-                        : "bg-primary"
-                  )}
-                  style={{
-                    width: `${Math.min(100, contextBudget.pct * 100).toFixed(1)}%`,
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-4">
-                {[
-                  { label: "System", value: contextBudget.systemTokens },
-                  { label: "Chunks", value: contextBudget.chunkTokens },
-                  { label: "Query", value: contextBudget.queryTokens },
-                ].map((row) => (
-                  <span key={row.label} className="text-[11px] text-muted-foreground">
-                    {row.label}:{" "}
-                    <span className="font-mono font-medium text-foreground/70">
-                      {row.value.toLocaleString()}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <pre className="overflow-x-auto rounded-lg border border-border bg-muted/50 p-4 font-mono text-xs leading-6 text-foreground/80 whitespace-pre-wrap break-words">
-            {result.promptPreview}
-          </pre>
-        </div>
-      )}
-=======
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
@@ -567,7 +474,6 @@ function ContextBudgetMeter({
           </span>
         ))}
       </div>
->>>>>>> 8769175 (submit form)
     </div>
   )
 }

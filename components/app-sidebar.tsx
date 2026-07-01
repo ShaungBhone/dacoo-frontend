@@ -50,129 +50,12 @@ const data = {
     },
   ],
   navMain: [
-<<<<<<< HEAD
-    {
-      title: "Playground",
-      url: "/dashboard",
-      icon: <TerminalSquareIcon />,
-      isActive: true,
-      items: [
-        {
-          title: "RAG Testing",
-          url: "/dashboard",
-        },
-        {
-          title: "Datasets",
-          url: "/datasets",
-        },
-        {
-          title: "Experiments",
-          url: "/experiments",
-        },
-        {
-          title: "Logs",
-          url: "/logs",
-        },
-        {
-          title: "Docs",
-          url: "/docs",
-        },
-        {
-          title: "Settings",
-          url: "/settings",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: <BotIcon />,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: <BookOpenIcon />,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: <Settings2Icon />,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: <FrameIcon />,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: <PieChartIcon />,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: <MapIcon />,
-    },
-=======
     { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
     { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
     { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
     { title: "Logs", url: "/logs", icon: <ScrollTextIcon /> },
     { title: "Docs", url: "/docs", icon: <BookOpenIcon /> },
     { title: "Settings", url: "/settings", icon: <Settings2Icon /> },
->>>>>>> 8769175 (submit form)
   ],
 }
 

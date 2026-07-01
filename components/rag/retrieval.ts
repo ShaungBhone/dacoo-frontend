@@ -111,10 +111,7 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "gpt-4-turbo": 128_000,
   "gpt-4": 8_192,
   "gpt-3.5-turbo": 16_385,
-<<<<<<< HEAD
   "gpt-5": 256_000,
-=======
->>>>>>> 8769175 (submit form)
   "claude-3-5-sonnet": 200_000,
   "claude-3-haiku": 200_000,
   "claude-3-opus": 200_000,
@@ -141,11 +138,7 @@ export function computeContextBudget(
   systemPrompt: string
 ): ContextBudget {
   const systemTokens = Math.ceil(systemPrompt.split(/\s+/).length * 1.35)
-<<<<<<< HEAD
   const chunkTokens = chunks.reduce((sum, c) => sum + (c.tokens ?? 0), 0)
-=======
-  const chunkTokens = chunks.reduce((sum, c) => sum + c.tokens, 0)
->>>>>>> 8769175 (submit form)
   const queryTokens = Math.max(4, Math.ceil(tokenize(query).length * 1.35))
   const usedTokens = systemTokens + chunkTokens + queryTokens
   const limitTokens = MODEL_CONTEXT_LIMITS[model] ?? DEFAULT_CONTEXT_LIMIT
