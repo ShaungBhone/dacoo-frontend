@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+<<<<<<< HEAD
 import { ApiError } from "@/lib/api"
 import { PlaygroundNav } from "@/components/playground-nav"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
@@ -33,6 +34,8 @@ import {
   type DocStatus,
   type DocumentSummary,
 } from "@/components/rag/api"
+=======
+>>>>>>> 8769175 (submit form)
 
 const POLL_INTERVAL_MS = 2500
 const ALLOWED_EXTENSIONS = ".pdf,.md,.markdown,.txt,.mdx,.csv,.json"
@@ -146,9 +149,7 @@ export function DatasetsView() {
   const totalTokens = documents.reduce((s, d) => s + d.tokens, 0)
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <PlaygroundNav active="Datasets" />
-
+    <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* ------------------------------ Left rail ----------------------------- */}
         <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-64">

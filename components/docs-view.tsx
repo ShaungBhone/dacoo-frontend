@@ -14,7 +14,6 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { PlaygroundNav } from "@/components/playground-nav"
 
 /* -------------------------------------------------------------------------- */
 /*                                   Data                                      */
@@ -68,9 +67,7 @@ export function DocsView() {
   )
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <PlaygroundNav active="Docs" />
-
+    <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* Section nav */}
         <aside className="lg:w-60 lg:shrink-0">

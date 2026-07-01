@@ -2,26 +2,78 @@
 
 import * as React from "react"
 import {
-  SparklesIcon,
-  CopyIcon,
   CheckIcon,
   ClockIcon,
   CoinsIcon,
-  ShieldCheckIcon,
-  TargetIcon,
+  CopyIcon,
   FileTextIcon,
+  ListChecksIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  TargetIcon,
   TerminalIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import {
+<<<<<<< HEAD
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { ContextBudget, Retrieved, RunResult } from "@/components/rag/retrieval"
+=======
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtSearchResult,
+  ChainOfThoughtSearchResults,
+  ChainOfThoughtStep,
+} from "@/components/ai-elements/chain-of-thought"
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockCopyButton,
+  CodeBlockFilename,
+  CodeBlockHeader,
+  CodeBlockTitle,
+} from "@/components/ai-elements/code-block"
+import {
+  InlineCitation,
+  InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
+  InlineCitationQuote,
+  InlineCitationSource,
+} from "@/components/ai-elements/inline-citation"
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageContent,
+} from "@/components/ai-elements/message"
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from "@/components/ai-elements/sources"
+import { cn } from "@/lib/utils"
+import type {
+  ContextBudget,
+  Retrieved,
+  RunResult,
+} from "@/components/rag/retrieval"
+>>>>>>> 8769175 (submit form)
 
 export function AnswerPanel({
   result,
@@ -37,19 +89,16 @@ export function AnswerPanel({
   const [tab, setTab] = React.useState<"answer" | "prompt">("answer")
   const [copied, setCopied] = React.useState(false)
 
-  React.useEffect(() => {
-    setTab("answer")
-  }, [result])
-
-  function copy() {
+  function copyAnswer() {
     const allBullets = result.structured.sections.flatMap((s) => s.bullets)
     const text = [
       result.structured.summary.text,
       ...allBullets.map((b) => b.text),
     ].join("\n")
+
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      window.setTimeout(() => setCopied(false), 1500)
     })
   }
 
@@ -81,16 +130,16 @@ export function AnswerPanel({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm">
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
-        <div className="flex items-center gap-1">
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           {(["answer", "prompt"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
                 tab === t
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -113,31 +162,190 @@ export function AnswerPanel({
               )}
             </button>
           ))}
-          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+          <span className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
             {result.model}
           </span>
         </div>
 
         {tab === "answer" && (
-          <button
-            type="button"
-            onClick={copy}
-            disabled={isStreaming}
-            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
-          >
-            {copied ? (
-              <CheckIcon className="size-3.5 text-primary" />
-            ) : (
-              <CopyIcon className="size-3.5" />
-            )}
-            {copied ? "Copied" : "Copy"}
-          </button>
+          <MessageActions className="shrink-0">
+            <MessageAction
+              disabled={isStreaming}
+              label={copied ? "Copied answer" : "Copy answer"}
+              onClick={copyAnswer}
+              tooltip={copied ? "Copied" : "Copy answer"}
+            >
+              {copied ? (
+                <CheckIcon className="size-3.5 text-primary" />
+              ) : (
+                <CopyIcon className="size-3.5" />
+              )}
+            </MessageAction>
+          </MessageActions>
         )}
       </div>
 
       {tab === "answer" && (
-        <div className="px-5 py-5">
-          <TooltipProvider delayDuration={100}>
+        <div className="flex flex-col gap-4">
+          <Sources className="mb-1 text-muted-foreground">
+            <SourcesTrigger
+              className="w-fit rounded-md px-0 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+              count={result.chunks.length}
+            >
+              <span>Sources</span>
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                {result.chunks.length}
+              </span>
+            </SourcesTrigger>
+            <SourcesContent className="w-full flex-row flex-wrap gap-2">
+              {result.chunks.map((chunk) => (
+                <Source
+                  key={chunk.id}
+                  href={`#retrieved-${chunk.id}`}
+                  title={chunk.source}
+                  target="_self"
+                  className="group inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-foreground transition-colors hover:border-primary/40 hover:bg-muted/50 hover:text-primary sm:max-w-[18rem]"
+                >
+                  <FileTextIcon className="size-3 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                  <span className="flex min-w-0 items-center gap-1.5 font-mono">
+                    <span className="min-w-0 truncate text-xs font-medium">
+                      {chunk.source}
+                    </span>
+                    <span className="shrink-0 text-[11px] font-semibold text-muted-foreground group-hover:text-primary">
+                      {chunk.score.toFixed(3)}
+                    </span>
+                  </span>
+                </Source>
+              ))}
+            </SourcesContent>
+          </Sources>
+
+          <Message from="assistant" className="max-w-full">
+            <MessageContent className="w-full gap-0 overflow-visible">
+              <AnswerTrace
+                isStreaming={isStreaming}
+                isTextVisible={isTextVisible}
+                result={result}
+              />
+            </MessageContent>
+          </Message>
+
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-3 border-t border-border pt-4 transition-opacity duration-500 md:grid-cols-4",
+              isStreaming ? "opacity-0" : "opacity-100"
+            )}
+          >
+            {metrics.map((m) => (
+              <div
+                key={m.label}
+                className="flex min-w-0 items-center gap-2 rounded-lg border border-border px-3 py-2"
+              >
+                <m.icon className="size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="font-mono text-sm font-semibold leading-tight">
+                    {m.value}
+                  </p>
+                  <p className="truncate text-[11px] uppercase text-muted-foreground">
+                    {m.label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === "prompt" && (
+        <div className="flex flex-col gap-3">
+          <p className="mb-3 text-xs text-muted-foreground text-pretty">
+            The exact context window sent to the model: system prompt, retrieved
+            chunks, and user query.
+          </p>
+
+          {contextBudget && <ContextBudgetMeter contextBudget={contextBudget} />}
+
+          <CodeBlock
+            code={result.promptPreview}
+            language="markdown"
+            className="max-h-[520px]"
+          >
+            <CodeBlockHeader>
+              <CodeBlockTitle>
+                <TerminalIcon className="size-3.5" />
+                <CodeBlockFilename>retrieval-prompt.txt</CodeBlockFilename>
+              </CodeBlockTitle>
+              <CodeBlockActions>
+                <CodeBlockCopyButton
+                  aria-label="Copy prompt preview"
+                  className="size-7"
+                />
+              </CodeBlockActions>
+            </CodeBlockHeader>
+          </CodeBlock>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function AnswerTrace({
+  result,
+  isStreaming,
+  isTextVisible,
+}: {
+  result: RunResult
+  isStreaming: boolean
+  isTextVisible: (text: string) => boolean
+}) {
+  const topChunk = result.chunks[0]
+  const answerStatus = isStreaming ? "active" : "complete"
+
+  return (
+    <ChainOfThought className="space-y-3" defaultOpen>
+      <ChainOfThoughtHeader>Retrieval reasoning</ChainOfThoughtHeader>
+      <ChainOfThoughtContent>
+        <ChainOfThoughtStep
+          icon={SearchIcon}
+          label="Search indexed sources"
+          description={
+            result.chunks.length > 0
+              ? `Matched ${result.chunks.length} source${result.chunks.length === 1 ? "" : "s"} for "${result.query}".`
+              : `No indexed source crossed the threshold for "${result.query}".`
+          }
+          status="complete"
+        >
+          <ChainOfThoughtSearchResults>
+            {result.chunks.length > 0 ? (
+              result.chunks.map((chunk) => (
+                <ChainOfThoughtSearchResult key={chunk.id}>
+                  {chunk.source} · {chunk.score.toFixed(3)}
+                </ChainOfThoughtSearchResult>
+              ))
+            ) : (
+              <ChainOfThoughtSearchResult>No matching source</ChainOfThoughtSearchResult>
+            )}
+          </ChainOfThoughtSearchResults>
+        </ChainOfThoughtStep>
+
+        <ChainOfThoughtStep
+          icon={ListChecksIcon}
+          label="Rank evidence"
+          description={
+            topChunk
+              ? `Top source: ${topChunk.source}, ${topChunk.path}, page ${topChunk.page}.`
+              : "No evidence was available to rank."
+          }
+          status="complete"
+        />
+
+        <ChainOfThoughtStep
+          icon={SparklesIcon}
+          label="Compose cited answer"
+          description="Answer text is generated from the retrieved chunks and keeps citations attached to claims."
+          status={answerStatus}
+        >
+          <div className="border-l border-border pl-3">
             <p className="text-sm leading-7 text-foreground">
               {result.structured.summary.text}
               {isStreaming && (
@@ -156,19 +364,18 @@ export function AnswerPanel({
                 key={section.heading}
                 className={cn(
                   "mt-5 transition-opacity duration-300",
-                  isStreaming &&
-                    !isTextVisible(section.bullets[0]?.text ?? "")
+                  isStreaming && !isTextVisible(section.bullets[0]?.text ?? "")
                     ? "opacity-0"
                     : "opacity-100"
                 )}
               >
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
                   {section.heading}
                 </p>
                 <ul className="flex flex-col gap-2">
                   {section.bullets.map((bullet, bi) => (
                     <li
-                      key={bi}
+                      key={`${section.heading}-${bi}`}
                       className={cn(
                         "flex items-start gap-2 text-sm leading-6 text-foreground/90 transition-opacity duration-200",
                         isStreaming && !isTextVisible(bullet.text)
@@ -197,34 +404,56 @@ export function AnswerPanel({
                 {result.structured.sourceNote}
               </p>
             )}
-          </TooltipProvider>
+          </div>
+        </ChainOfThoughtStep>
+      </ChainOfThoughtContent>
+    </ChainOfThought>
+  )
+}
 
-          <div
+function ContextBudgetMeter({
+  contextBudget,
+}: {
+  contextBudget: ContextBudget
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-4 flex flex-col gap-2 rounded-lg border px-3 py-3",
+        contextBudget.isOver
+          ? "border-destructive/40 bg-destructive/5"
+          : contextBudget.pct > 0.8
+            ? "border-amber-500/40 bg-amber-500/5"
+            : "border-border bg-muted/30"
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          {contextBudget.isOver && (
+            <TriangleAlertIcon className="size-3.5 text-destructive" />
+          )}
+          <span
             className={cn(
-              "mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 transition-opacity duration-500 md:grid-cols-4",
-              isStreaming ? "opacity-0" : "opacity-100"
+              "text-xs font-semibold",
+              contextBudget.isOver
+                ? "text-destructive"
+                : contextBudget.pct > 0.8
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-foreground"
             )}
           >
-            {metrics.map((m) => (
-              <div
-                key={m.label}
-                className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
-              >
-                <m.icon className="size-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                  <p className="font-mono text-sm font-semibold leading-tight">
-                    {m.value}
-                  </p>
-                  <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {m.label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+            {contextBudget.isOver
+              ? "Context window exceeded"
+              : "Context window usage"}
+          </span>
         </div>
-      )}
+        <span className="font-mono text-xs text-muted-foreground">
+          {contextBudget.usedTokens.toLocaleString()} /{" "}
+          {contextBudget.limitTokens.toLocaleString()} tok
+        </span>
+      </div>
 
+<<<<<<< HEAD
       {tab === "prompt" && (
         <div className="px-5 py-5">
           <p className="mb-3 text-xs text-muted-foreground text-pretty">
@@ -307,48 +536,85 @@ export function AnswerPanel({
           </pre>
         </div>
       )}
+=======
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all duration-300",
+            contextBudget.isOver
+              ? "bg-destructive"
+              : contextBudget.pct > 0.8
+                ? "bg-amber-500"
+                : "bg-primary"
+          )}
+          style={{
+            width: `${Math.min(100, contextBudget.pct * 100).toFixed(1)}%`,
+          }}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {[
+          { label: "System", value: contextBudget.systemTokens },
+          { label: "Chunks", value: contextBudget.chunkTokens },
+          { label: "Query", value: contextBudget.queryTokens },
+        ].map((row) => (
+          <span key={row.label} className="text-[11px] text-muted-foreground">
+            {row.label}:{" "}
+            <span className="font-mono font-medium text-foreground/70">
+              {row.value.toLocaleString()}
+            </span>
+          </span>
+        ))}
+      </div>
+>>>>>>> 8769175 (submit form)
     </div>
   )
 }
 
 function Citation({ n, chunk }: { n: number; chunk?: Retrieved }) {
-  const badge = (
-    <button
-      type="button"
-      className="mx-0.5 inline-flex size-4 translate-y-[-1px] cursor-pointer items-center justify-center rounded bg-primary/10 align-middle font-mono text-[10px] font-semibold text-primary outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
-      aria-label={chunk ? `Source ${n}: ${chunk.source}` : `Source ${n}`}
-    >
-      {n}
-    </button>
-  )
-
-  if (!chunk) return badge
+  if (!chunk) {
+    return (
+      <span className="mx-1 inline-flex rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+        {n}
+      </span>
+    )
+  }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{badge}</TooltipTrigger>
-      <TooltipContent
-        side="top"
-        className="block max-w-sm rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-md [&_svg]:hidden"
-      >
-        <span className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate font-mono text-xs font-medium text-foreground">
-              {chunk.source}
-            </span>
-          </span>
-          <span className="shrink-0 font-mono text-xs font-semibold text-primary">
-            {chunk.score.toFixed(3)}
-          </span>
-        </span>
-        <span className="block px-3 pt-1.5 text-[11px] text-muted-foreground">
-          {chunk.path} · p.&nbsp;{chunk.page} · {chunk.tokens} tok
-        </span>
-        <span className="block px-3 pb-3 pt-1.5 text-xs leading-5 text-foreground/80">
-          {chunk.text}
-        </span>
-      </TooltipContent>
-    </Tooltip>
+    <InlineCitation className="mx-1">
+      <InlineCitationCard>
+        <InlineCitationCardTrigger
+          aria-label={`Source ${n}: ${chunk.source}`}
+          className="max-w-36 translate-y-[-1px] cursor-pointer truncate px-1.5 py-0 font-mono text-[10px]"
+          sources={[sourceUrl(chunk)]}
+        />
+        <InlineCitationCardBody className="w-80 overflow-hidden">
+          <InlineCitationCarousel>
+            <InlineCitationCarouselHeader>
+              <InlineCitationCarouselPrev />
+              <InlineCitationCarouselNext />
+              <InlineCitationCarouselIndex>
+                Source {n}
+              </InlineCitationCarouselIndex>
+            </InlineCitationCarouselHeader>
+            <InlineCitationCarouselContent>
+              <InlineCitationCarouselItem>
+                <InlineCitationSource
+                  title={chunk.source}
+                  url={`${chunk.path} · p. ${chunk.page} · ${chunk.tokens} tok`}
+                  description={`Score ${chunk.score.toFixed(3)}`}
+                />
+                <InlineCitationQuote>{chunk.text}</InlineCitationQuote>
+              </InlineCitationCarouselItem>
+            </InlineCitationCarouselContent>
+          </InlineCitationCarousel>
+        </InlineCitationCardBody>
+      </InlineCitationCard>
+    </InlineCitation>
   )
+}
+
+function sourceUrl(chunk: Retrieved): string {
+  return `https://${chunk.source}`
 }

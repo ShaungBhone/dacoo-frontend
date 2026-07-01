@@ -13,7 +13,6 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { PlaygroundNav } from "@/components/playground-nav"
 
 /* -------------------------------------------------------------------------- */
 /*                                  Demo data                                  */
@@ -188,9 +187,7 @@ export function ExperimentsView() {
   const compareRuns = EXPERIMENTS.filter((e) => selected.includes(e.id))
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <PlaygroundNav active="Experiments" />
-
+    <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
         {/* Header */}
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

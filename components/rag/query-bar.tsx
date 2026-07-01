@@ -3,22 +3,39 @@
 import * as React from "react"
 import {
   SparklesIcon,
-  Loader2Icon,
-  SearchIcon,
   ShieldCheckIcon,
-  CornerDownLeftIcon,
   MessageCircleIcon,
   BarChart2Icon,
   ListChecksIcon,
   AlignLeftIcon,
   PlusIcon,
   PencilIcon,
-  Trash2Icon,
   XIcon,
   CheckIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputCommand,
+  PromptInputCommandEmpty,
+  PromptInputCommandGroup,
+  PromptInputCommandInput,
+  PromptInputCommandItem,
+  PromptInputCommandList,
+  PromptInputCommandSeparator,
+  PromptInputFooter,
+  PromptInputHeader,
+  PromptInputHoverCard,
+  PromptInputHoverCardContent,
+  PromptInputHoverCardTrigger,
+  type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+} from "@/components/ai-elements/prompt-input"
 import {
   PROMPT_TEMPLATES,
   SAMPLE_QUERIES,
@@ -34,138 +51,190 @@ export function QueryBar({
   query,
   setQuery,
   onRun,
-  onKeyDown,
   isRunning,
   templates,
   templateId,
   setTemplateId,
   onAddTemplate,
   onEditTemplate,
-  onDeleteTemplate,
 }: {
   query: string
   setQuery: (v: string) => void
-  onRun: () => void
-  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  onRun: (query?: string) => void
   isRunning: boolean
   templates: PromptTemplate[]
   templateId: string
   setTemplateId: (id: string) => void
   onAddTemplate: () => void
   onEditTemplate: (template: PromptTemplate) => void
-  onDeleteTemplate: (id: string) => void
 }) {
+  const [previewTemplateId, setPreviewTemplateId] =
+    React.useState(templateId)
   const active = templates.find((t) => t.id === templateId) ?? templates[0]
+  const previewTemplate =
+    templates.find((t) => t.id === previewTemplateId) ?? active
+
+  function handleSubmit(message: PromptInputMessage) {
+    const nextQuery = message.text.trim()
+    if (!nextQuery) return
+    onRun(nextQuery)
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Prompt template
-          </p>
-          <button
-            type="button"
-            onClick={onAddTemplate}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-          >
-            <PlusIcon className="size-3" />
-            Add template
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {templates.map((t) => {
-            const isActive = t.id === templateId
-            return (
-              <div
-                key={t.id}
-                className={cn(
-                  "group flex items-center gap-1 rounded-lg border pr-1 transition-colors",
-                  isActive
-                    ? "border-primary/60 bg-primary/10"
-                    : "border-border bg-background hover:border-primary/30"
-                )}
+      <PromptInput onSubmit={handleSubmit}>
+        <PromptInputHeader>
+          <PromptInputHoverCard>
+            <PromptInputHoverCardTrigger asChild>
+              <PromptInputButton
+                className="max-w-full"
+                size="sm"
+                variant="outline"
               >
-                <button
-                  type="button"
-                  onClick={() => setTemplateId(t.id)}
-                  title={t.description}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-l-lg py-1.5 pl-3 pr-1 text-xs font-medium transition-colors",
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
+                <TemplateIcon id={active.id} />
+                <span className="truncate">{active.label}</span>
+              </PromptInputButton>
+            </PromptInputHoverCardTrigger>
+            <PromptInputHoverCardContent className="w-[min(92vw,520px)] overflow-hidden p-0">
+              <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Prompt Templates</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {previewTemplate.description}
+                  </p>
+                </div>
+                <PromptInputButton
+                  aria-label="Add Prompt Template"
+                  onClick={onAddTemplate}
+                  size="sm"
+                  variant="outline"
                 >
-                  <TemplateIcon id={t.id} />
-                  {t.label}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onEditTemplate(t)}
-                  aria-label={`Edit ${t.label}`}
-                  className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <PencilIcon className="size-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDeleteTemplate(t.id)}
-                  aria-label={`Delete ${t.label}`}
-                  disabled={templates.length <= 1}
-                  className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                >
-                  <Trash2Icon className="size-3" />
-                </button>
+                  <PlusIcon className="size-3.5" />
+                  <span>Add</span>
+                </PromptInputButton>
               </div>
-            )
-          })}
-        </div>
 
-        {active && (
-          <p className="mt-1 rounded-md bg-muted/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-            {active.system}
-          </p>
-        )}
-      </div>
+              <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="max-h-72 overflow-y-auto p-1">
+                  {templates.map((template) => {
+                    const isActive = template.id === templateId
+                    return (
+                      <div
+                        key={template.id}
+                        className={cn(
+                          "group flex items-center gap-1 rounded-2xl px-2 py-1.5 transition-colors hover:bg-muted/60",
+                          isActive && "bg-muted text-foreground"
+                        )}
+                        onMouseEnter={() => setPreviewTemplateId(template.id)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTemplateId(template.id)
+                            setPreviewTemplateId(template.id)
+                          }}
+                          className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40"
+                        >
+                          <TemplateIcon id={template.id} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium">
+                              {template.label}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {template.description}
+                            </span>
+                          </span>
+                          {isActive && (
+                            <CheckIcon className="size-3.5 text-primary" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEditTemplate(template)}
+                          aria-label={`Edit ${template.label}`}
+                          className="flex size-7 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-70 transition-colors hover:bg-background hover:text-foreground group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/40"
+                        >
+                          <PencilIcon className="size-3.5" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 pl-3 shadow-sm focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
-        <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Ask a question against your indexed sources…"
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-        <button
-          type="button"
-          onClick={onRun}
-          disabled={!query.trim() || isRunning}
-          className="flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-        >
-          {isRunning ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : (
-            <CornerDownLeftIcon className="size-4" />
-          )}
-          Run
-        </button>
-      </div>
+                <div className="border-t border-border bg-muted/30 p-3 md:border-l md:border-t-0">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <TemplateIcon id={previewTemplate.id} />
+                    {previewTemplate.label}
+                  </p>
+                  <p className="max-h-40 overflow-y-auto rounded-2xl bg-background/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                    {previewTemplate.system}
+                  </p>
+                </div>
+              </div>
+            </PromptInputHoverCardContent>
+          </PromptInputHoverCard>
 
-      <div className="flex flex-wrap gap-2">
-        {SAMPLE_QUERIES.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => setQuery(q)}
-            className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
+          <PromptInputHoverCard>
+            <PromptInputHoverCardTrigger asChild>
+              <PromptInputButton size="sm" variant="outline">
+                <SparklesIcon className="size-3.5" />
+                <span>Suggestions</span>
+              </PromptInputButton>
+            </PromptInputHoverCardTrigger>
+            <PromptInputHoverCardContent className="w-[min(92vw,440px)] overflow-hidden p-0">
+              <PromptInputCommand>
+                <PromptInputCommandInput
+                  className="border-none focus-visible:ring-0"
+                  placeholder="Find a sample query..."
+                />
+                <PromptInputCommandList>
+                  <PromptInputCommandEmpty className="p-3 text-sm text-muted-foreground">
+                    No sample query found.
+                  </PromptInputCommandEmpty>
+                  <PromptInputCommandGroup heading="Sample queries">
+                    {SAMPLE_QUERIES.map((sampleQuery) => (
+                      <PromptInputCommandItem
+                        key={sampleQuery}
+                        onSelect={() => setQuery(sampleQuery)}
+                      >
+                        <SparklesIcon className="text-primary" />
+                        <span className="line-clamp-2">{sampleQuery}</span>
+                      </PromptInputCommandItem>
+                    ))}
+                  </PromptInputCommandGroup>
+                  <PromptInputCommandSeparator />
+                  <p className="px-3 pb-2 pt-1 text-xs text-muted-foreground">
+                    Selecting a suggestion fills the input so it can be edited
+                    before running.
+                  </p>
+                </PromptInputCommandList>
+              </PromptInputCommand>
+            </PromptInputHoverCardContent>
+          </PromptInputHoverCard>
+        </PromptInputHeader>
+
+        <PromptInputBody>
+          <PromptInputTextarea
+            value={query}
+            onChange={(e) => setQuery(e.currentTarget.value)}
+            placeholder="Ask a question against your indexed sources…"
+            className="min-h-20 pr-12"
+          />
+        </PromptInputBody>
+
+        <PromptInputFooter>
+          <PromptInputTools>
+            <span className="truncate text-xs text-muted-foreground">
+              Retrieval testing
+            </span>
+          </PromptInputTools>
+          <PromptInputSubmit
+            status={isRunning ? "submitted" : "ready"}
+            disabled={!query.trim() || isRunning}
+            className="!h-8"
+          />
+        </PromptInputFooter>
+      </PromptInput>
     </div>
   )
 }

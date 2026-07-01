@@ -7,14 +7,15 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { ResizablePanel } from "@/components/ui/resizable"
 import { useRightSidebar } from "@/components/right-sidebar-provider"
+import { ChunksList } from "@/components/rag/chunks-list"
 import { ConfigRail } from "@/components/rag/config-rail"
 import { KnowledgeBase } from "@/components/rag/knowledge-base"
+import { useRag } from "@/components/rag/rag-context"
 
 export function RightSidebarTrigger({
   className,
@@ -42,6 +43,7 @@ export function RightSidebarTrigger({
 
 export function RightSidebar() {
   const { panelRef, _onPanelCollapse, _onPanelExpand } = useRightSidebar()
+  const { runResult } = useRag()
 
   return (
     <ResizablePanel
@@ -66,6 +68,12 @@ export function RightSidebar() {
       <Sidebar side="right" collapsible="none" className="h-full">
         <SidebarContent className="gap-5 px-3 py-4">
           <ConfigRail />
+          {runResult && (
+            <>
+              <SidebarSeparator className="mx-0" />
+              <ChunksList chunks={runResult.chunks} />
+            </>
+          )}
           <SidebarSeparator className="mx-0" />
           <KnowledgeBase />
         </SidebarContent>

@@ -3,7 +3,6 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import { useAuth } from "@/contexts/auth-context"
@@ -19,12 +18,11 @@ import {
   AudioLinesIcon,
   TerminalIcon,
   TerminalSquareIcon,
-  BotIcon,
   BookOpenIcon,
   Settings2Icon,
-  FrameIcon,
-  PieChartIcon,
-  MapIcon,
+  DatabaseIcon,
+  FlaskConicalIcon,
+  ScrollTextIcon,
 } from "lucide-react"
 
 // This is sample data.
@@ -52,6 +50,7 @@ const data = {
     },
   ],
   navMain: [
+<<<<<<< HEAD
     {
       title: "Playground",
       url: "/dashboard",
@@ -166,13 +165,22 @@ const data = {
       url: "#",
       icon: <MapIcon />,
     },
+=======
+    { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
+    { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
+    { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
+    { title: "Logs", url: "/logs", icon: <ScrollTextIcon /> },
+    { title: "Docs", url: "/docs", icon: <BookOpenIcon /> },
+    { title: "Settings", url: "/settings", icon: <Settings2Icon /> },
+>>>>>>> 8769175 (submit form)
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
 
   const teams = React.useMemo(() => {
+    if (isLoading && !user) return []
     if (!user?.organizations || user.organizations.length === 0) {
       return [
         {
@@ -191,7 +199,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         plan: org.owner_id === user.id ? "Owner" : "Member",
       }
     })
-  }, [user])
+  }, [user, isLoading])
 
   const sidebarUser = React.useMemo(() => {
     return {
@@ -208,7 +216,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={sidebarUser} />

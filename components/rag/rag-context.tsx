@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   computeContextBudget,
+<<<<<<< HEAD
   type ContextBudget,
   type Doc,
 } from "@/components/rag/retrieval"
@@ -13,6 +14,13 @@ import { useActiveOrganization } from "@/hooks/use-active-organization"
 // Rough average tokens per retrieved chunk, used only to preview the context
 // budget before a query has actually run (and returned real chunk data).
 const AVERAGE_CHUNK_TOKENS = 180
+=======
+  KNOWLEDGE_BASE,
+  type ContextBudget,
+  type RunResult,
+} from "@/components/rag/retrieval"
+import { PROMPT_TEMPLATES } from "@/components/rag/data"
+>>>>>>> 8769175 (submit form)
 
 export type RagConfig = {
   genModel: string
@@ -30,11 +38,16 @@ type RagContextValue = {
   setTemperature: (v: number) => void
   setRerank: (v: boolean) => void
   contextBudget: ContextBudget
+<<<<<<< HEAD
   datasets: DatasetSummary[]
   isLoadingDatasets: boolean
   datasetId: string | null
   setDatasetId: (id: string) => void
   refreshDatasets: () => Promise<void>
+=======
+  runResult: RunResult | null
+  setRunResult: (result: RunResult | null) => void
+>>>>>>> 8769175 (submit form)
 }
 
 const RagContext = React.createContext<RagContextValue | null>(null)
@@ -55,6 +68,20 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   const [topK, setTopK] = React.useState(4)
   const [temperature, setTemperature] = React.useState(0.2)
   const [rerank, setRerank] = React.useState(true)
+  const [runResult, setRunResult] = React.useState<RunResult | null>(null)
+
+  // Compute a representative context budget using the top-K chunks from the
+  // knowledge base and the default system prompt so the meter updates live.
+  const contextBudget = React.useMemo<ContextBudget>(() => {
+    const topChunks = KNOWLEDGE_BASE.slice(0, topK)
+    const defaultSystem = PROMPT_TEMPLATES[0].system
+    return computeContextBudget(
+      "sample query for budget estimation",
+      topChunks,
+      genModel,
+      defaultSystem
+    )
+  }, [genModel, topK])
 
   const organization = useActiveOrganization()
   const [datasets, setDatasets] = React.useState<DatasetSummary[]>([])
@@ -112,11 +139,16 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       setTemperature,
       setRerank,
       contextBudget,
+<<<<<<< HEAD
       datasets,
       isLoadingDatasets,
       datasetId,
       setDatasetId,
       refreshDatasets,
+=======
+      runResult,
+      setRunResult,
+>>>>>>> 8769175 (submit form)
     }),
     [
       genModel,
@@ -125,10 +157,14 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       temperature,
       rerank,
       contextBudget,
+<<<<<<< HEAD
       datasets,
       isLoadingDatasets,
       datasetId,
       refreshDatasets,
+=======
+      runResult,
+>>>>>>> 8769175 (submit form)
     ]
   )
 
