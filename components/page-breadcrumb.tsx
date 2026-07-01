@@ -13,6 +13,7 @@ import {
 
 const LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/agents": "Agents",
   "/datasets": "Datasets",
   "/experiments": "Experiments",
   "/logs": "Logs",
