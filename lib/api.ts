@@ -1,6 +1,7 @@
 import { getCookie } from "./cookies"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://maychat.test"
+const isDev = process.env.NODE_ENV !== "production"
 
 export class ApiError extends Error {
   status: number
@@ -63,10 +64,79 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    const errorMessage =
-      data?.message || response.statusText || "Request failed"
-    throw new ApiError(errorMessage, response.status, data?.errors)
+    const isProd = process.env.NODE_ENV === "production"
+    let message: string
+    if (isProd) {
+      message =
+        extractCleanMessage(data) ?? friendlyStatusMessage(response.status)
+    } else {
+      if (isDev)
+        console.error("[apiFetch] non-ok response:", {
+          status: response.status,
+          data,
+        })
+      message = devErrorMessage(response.status, data)
+    }
+    throw new ApiError(message, response.status, data?.errors)
   }
 
   return data as T
+}
+
+function extractCleanMessage(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined
+  const obj = data as Record<string, unknown>
+  const errorObj = obj.error
+  const candidate =
+    (typeof errorObj === "object" && errorObj !== null
+      ? (errorObj as Record<string, unknown>).message
+      : typeof errorObj === "string"
+        ? errorObj
+        : undefined) ?? obj.message
+  if (typeof candidate !== "string") return undefined
+  if (process.env.NODE_ENV === "production") {
+    if (/HTTP request returned status code/.test(candidate)) return undefined
+    if (candidate.trim().startsWith("{")) return undefined
+  }
+  return candidate
+}
+
+function devErrorMessage(status: number, data: unknown): string {
+  const clean = extractCleanMessage(data)
+  if (clean) return `[${status}] ${clean}`
+  const snapshot =
+    typeof data === "string"
+      ? data
+      : (() => {
+          try {
+            return JSON.stringify(data)
+          } catch {
+            return String(data)
+          }
+        })()
+  const trimmed = snapshot.trim()
+  if (trimmed) return `[${status}] ${trimmed.slice(0, 500)}`
+  return `[${status}] ${friendlyStatusMessage(status)}`
+}
+
+function friendlyStatusMessage(status: number): string {
+  switch (status) {
+    case 401:
+      return "You're not authorized to do that. Please sign in again."
+    case 403:
+      return "You don't have permission to do that."
+    case 404:
+      return "We couldn't find what you were looking for."
+    case 422:
+      return "Some of the information provided wasn't valid."
+    case 429:
+      return "Too many requests. Please wait a moment and try again."
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return "Something went wrong on our end. Please try again."
+    default:
+      return "Request failed. Please try again."
+  }
 }

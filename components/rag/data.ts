@@ -5,14 +5,14 @@ export const SAMPLE_QUERIES = [
   "Which fees apply to cross-border card settlements?",
 ]
 
-export type PromptTemplate = {
+export type Agent = {
   id: string
   label: string
   description: string
   system: string
 }
 
-export const PROMPT_TEMPLATES: PromptTemplate[] = [
+export const AGENTS: Agent[] = [
   {
     id: "default",
     label: "Default assistant",

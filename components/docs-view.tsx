@@ -68,10 +68,10 @@ export function DocsView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
+      <div className="mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* Section nav */}
         <aside className="lg:w-60 lg:shrink-0">
-          <div className="lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-0">
             <div className="relative mb-3">
               <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input

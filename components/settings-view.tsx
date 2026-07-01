@@ -37,10 +37,10 @@ export function SettingsView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
+      <div className="mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* Section nav */}
         <aside className="lg:w-56 lg:shrink-0">
-          <nav className="flex gap-1 overflow-x-auto lg:sticky lg:top-20 lg:flex-col lg:overflow-visible">
+          <nav className="flex gap-1 overflow-x-auto lg:sticky lg:top-0 lg:flex-col lg:overflow-visible">
             {SECTIONS.map((s) => (
               <a
                 key={s.id}

@@ -41,7 +41,13 @@ export function ChunksList({ chunks }: { chunks: Retrieved[] }) {
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                    {chunk.path} · p.&nbsp;{chunk.page} · {chunk.tokens} tok
+                    {[
+                      chunk.path,
+                      chunk.page != null ? `p. ${chunk.page}` : null,
+                      chunk.tokens != null ? `${chunk.tokens} tok` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 <span className="shrink-0 font-mono text-xs font-semibold text-primary">

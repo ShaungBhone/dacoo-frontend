@@ -36,6 +36,25 @@ export type QueryResponse = {
   model: string
 }
 
+export type ModelOption = {
+  id: string
+  label: string
+  provider: string
+}
+
+export type EmbeddingModelOption = ModelOption & {
+  dimensions: number
+}
+
+export type ModelCatalog = {
+  chatModels: ModelOption[]
+  embeddingModels: EmbeddingModelOption[]
+}
+
+export async function fetchModelCatalog(): Promise<ModelCatalog> {
+  return apiFetch<ModelCatalog>("/api/v1/ai/models")
+}
+
 export async function fetchDatasets(
   organizationId: number
 ): Promise<DatasetSummary[]> {

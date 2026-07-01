@@ -36,15 +36,11 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
-import {
-  PROMPT_TEMPLATES,
-  SAMPLE_QUERIES,
-  type PromptTemplate,
-} from "@/components/rag/data"
+import { AGENTS, SAMPLE_QUERIES, type Agent } from "@/components/rag/data"
 
-export type TemplateDialogState =
+export type AgentDialogState =
   | { mode: "add" }
-  | { mode: "edit"; template: PromptTemplate }
+  | { mode: "edit"; agent: Agent }
   | null
 
 export function QueryBar({
@@ -52,27 +48,28 @@ export function QueryBar({
   setQuery,
   onRun,
   isRunning,
-  templates,
-  templateId,
-  setTemplateId,
-  onAddTemplate,
-  onEditTemplate,
+  agents,
+  agentId,
+  setAgentId,
+  onAddAgent,
+  onEditAgent,
+  disabled,
 }: {
   query: string
   setQuery: (v: string) => void
   onRun: (query?: string) => void
   isRunning: boolean
-  templates: PromptTemplate[]
-  templateId: string
-  setTemplateId: (id: string) => void
-  onAddTemplate: () => void
-  onEditTemplate: (template: PromptTemplate) => void
+  agents: Agent[]
+  agentId: string
+  setAgentId: (id: string) => void
+  onAddAgent: () => void
+  onEditAgent: (agent: Agent) => void
+  disabled?: boolean
 }) {
-  const [previewTemplateId, setPreviewTemplateId] =
-    React.useState(templateId)
-  const active = templates.find((t) => t.id === templateId) ?? templates[0]
-  const previewTemplate =
-    templates.find((t) => t.id === previewTemplateId) ?? active
+  const [previewAgentId, setPreviewAgentId] = React.useState(agentId)
+  const active = agents.find((a) => a.id === agentId) ?? agents[0]
+  const previewAgent =
+    agents.find((a) => a.id === previewAgentId) ?? active
 
   function handleSubmit(message: PromptInputMessage) {
     const nextQuery = message.text.trim()
@@ -90,22 +87,23 @@ export function QueryBar({
                 className="max-w-full"
                 size="sm"
                 variant="outline"
+                disabled={disabled}
               >
-                <TemplateIcon id={active.id} />
+                <AgentIcon id={active.id} />
                 <span className="truncate">{active.label}</span>
               </PromptInputButton>
             </PromptInputHoverCardTrigger>
             <PromptInputHoverCardContent className="w-[min(92vw,520px)] overflow-hidden p-0">
               <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">Prompt Templates</p>
+                  <p className="text-sm font-medium">Agents</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {previewTemplate.description}
+                    {previewAgent.description}
                   </p>
                 </div>
                 <PromptInputButton
-                  aria-label="Add Prompt Template"
-                  onClick={onAddTemplate}
+                  aria-label="Add Agent"
+                  onClick={onAddAgent}
                   size="sm"
                   variant="outline"
                 >
@@ -116,32 +114,32 @@ export function QueryBar({
 
               <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
                 <div className="max-h-72 overflow-y-auto p-1">
-                  {templates.map((template) => {
-                    const isActive = template.id === templateId
+                  {agents.map((agent) => {
+                    const isActive = agent.id === agentId
                     return (
                       <div
-                        key={template.id}
+                        key={agent.id}
                         className={cn(
                           "group flex items-center gap-1 rounded-2xl px-2 py-1.5 transition-colors hover:bg-muted/60",
                           isActive && "bg-muted text-foreground"
                         )}
-                        onMouseEnter={() => setPreviewTemplateId(template.id)}
+                        onMouseEnter={() => setPreviewAgentId(agent.id)}
                       >
                         <button
                           type="button"
                           onClick={() => {
-                            setTemplateId(template.id)
-                            setPreviewTemplateId(template.id)
+                            setAgentId(agent.id)
+                            setPreviewAgentId(agent.id)
                           }}
                           className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40"
                         >
-                          <TemplateIcon id={template.id} />
+                          <AgentIcon id={agent.id} />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium">
-                              {template.label}
+                              {agent.label}
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
-                              {template.description}
+                              {agent.description}
                             </span>
                           </span>
                           {isActive && (
@@ -150,8 +148,8 @@ export function QueryBar({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onEditTemplate(template)}
-                          aria-label={`Edit ${template.label}`}
+                          onClick={() => onEditAgent(agent)}
+                          aria-label={`Edit ${agent.label}`}
                           className="flex size-7 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-70 transition-colors hover:bg-background hover:text-foreground group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/40"
                         >
                           <PencilIcon className="size-3.5" />
@@ -163,11 +161,11 @@ export function QueryBar({
 
                 <div className="border-t border-border bg-muted/30 p-3 md:border-l md:border-t-0">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <TemplateIcon id={previewTemplate.id} />
-                    {previewTemplate.label}
+                    <AgentIcon id={previewAgent.id} />
+                    {previewAgent.label}
                   </p>
-                  <p className="max-h-40 overflow-y-auto rounded-2xl bg-background/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                    {previewTemplate.system}
+                  <p className="overflow-y-auto rounded-2xl bg-background/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                    {previewAgent.system}
                   </p>
                 </div>
               </div>
@@ -176,7 +174,7 @@ export function QueryBar({
 
           <PromptInputHoverCard>
             <PromptInputHoverCardTrigger asChild>
-              <PromptInputButton size="sm" variant="outline">
+              <PromptInputButton size="sm" variant="outline" disabled={disabled}>
                 <SparklesIcon className="size-3.5" />
                 <span>Suggestions</span>
               </PromptInputButton>
@@ -219,6 +217,7 @@ export function QueryBar({
             onChange={(e) => setQuery(e.currentTarget.value)}
             placeholder="Ask a question against your indexed sources…"
             className="min-h-20 pr-12"
+            disabled={disabled}
           />
         </PromptInputBody>
 
@@ -230,7 +229,7 @@ export function QueryBar({
           </PromptInputTools>
           <PromptInputSubmit
             status={isRunning ? "submitted" : "ready"}
-            disabled={!query.trim() || isRunning}
+            disabled={disabled || !query.trim() || isRunning}
             className="!h-8"
           />
         </PromptInputFooter>
@@ -239,7 +238,7 @@ export function QueryBar({
   )
 }
 
-function TemplateIcon({ id }: { id: string }) {
+function AgentIcon({ id }: { id: string }) {
   switch (id) {
     case "support":
       return <MessageCircleIcon className="size-3" />
@@ -256,30 +255,30 @@ function TemplateIcon({ id }: { id: string }) {
   }
 }
 
-export function TemplateDialog({
-  template,
+export function AgentDialog({
+  agent,
   onClose,
   onSave,
 }: {
-  template: PromptTemplate | null
+  agent: Agent | null
   onClose: () => void
-  onSave: (input: Omit<PromptTemplate, "id"> & { id?: string }) => void
+  onSave: (input: Omit<Agent, "id"> & { id?: string }) => void
 }) {
-  const isEdit = template != null
-  const [label, setLabel] = React.useState(template?.label ?? "")
+  const isEdit = agent != null
+  const [label, setLabel] = React.useState(agent?.label ?? "")
   const [description, setDescription] = React.useState(
-    template?.description ?? ""
+    agent?.description ?? ""
   )
-  const [system, setSystem] = React.useState(template?.system ?? "")
+  const [system, setSystem] = React.useState(agent?.system ?? "")
 
   const canSave = label.trim().length > 0 && system.trim().length > 0
 
   function handleSave() {
     if (!canSave) return
     onSave({
-      id: template?.id,
+      id: agent?.id,
       label: label.trim(),
-      description: description.trim() || "Custom template",
+      description: description.trim() || "Custom agent",
       system: system.trim(),
     })
   }
@@ -289,7 +288,7 @@ export function TemplateDialog({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={isEdit ? "Edit prompt template" : "Add prompt template"}
+      aria-label={isEdit ? "Edit agent" : "Add agent"}
     >
       <button
         type="button"
@@ -305,12 +304,12 @@ export function TemplateDialog({
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold">
-              {isEdit ? "Edit template" : "New prompt template"}
+              {isEdit ? "Edit agent" : "New agent"}
             </h2>
             <p className="truncate text-xs text-muted-foreground">
               {isEdit
-                ? "Adjust how this template instructs the model."
-                : "Define a reusable system prompt for your answers."}
+                ? "Adjust how this agent instructs the model."
+                : "Define a reusable agent persona for your answers."}
             </p>
           </div>
           <button
@@ -326,13 +325,13 @@ export function TemplateDialog({
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="tpl-label"
+              htmlFor="agent-label"
               className="text-xs font-medium text-muted-foreground"
             >
               Name
             </label>
             <input
-              id="tpl-label"
+              id="agent-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Technical writer"
@@ -342,13 +341,13 @@ export function TemplateDialog({
 
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="tpl-desc"
+              htmlFor="agent-desc"
               className="text-xs font-medium text-muted-foreground"
             >
               Description
             </label>
             <input
-              id="tpl-desc"
+              id="agent-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short hint shown on hover (optional)"
@@ -358,13 +357,13 @@ export function TemplateDialog({
 
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="tpl-system"
+              htmlFor="agent-system"
               className="text-xs font-medium text-muted-foreground"
             >
               System prompt
             </label>
             <textarea
-              id="tpl-system"
+              id="agent-system"
               value={system}
               onChange={(e) => setSystem(e.target.value)}
               rows={6}
@@ -389,7 +388,7 @@ export function TemplateDialog({
             className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CheckIcon className="size-4" />
-            {isEdit ? "Save changes" : "Add template"}
+            {isEdit ? "Save changes" : "Add agent"}
           </button>
         </div>
       </div>
@@ -397,5 +396,5 @@ export function TemplateDialog({
   )
 }
 
-export { PROMPT_TEMPLATES }
-export type { PromptTemplate }
+export { AGENTS }
+export type { Agent }

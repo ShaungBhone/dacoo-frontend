@@ -9,17 +9,25 @@ import {
   Slider,
   Toggle,
 } from "@/components/rag/primitives"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useRag } from "@/components/rag/rag-context"
 
 export function ConfigRail() {
   const {
     config: { genModel, embedModel, topK, temperature, rerank },
     setGenModel,
-    setEmbedModel,
     setTopK,
     setTemperature,
     setRerank,
     contextBudget,
+    modelCatalog,
+    isLoadingModels,
   } = useRag()
 
   return (
@@ -29,19 +37,31 @@ export function ConfigRail() {
       </RailHeading>
 
       <Field label="Generation model">
-        <input
+        <Select
           value={genModel}
-          onChange={(e) => setGenModel(e.target.value)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-        />
+          onValueChange={setGenModel}
+          disabled={isLoadingModels || modelCatalog.chatModels.length === 0}
+        >
+          <SelectTrigger className="h-9 w-full font-mono text-sm">
+            <SelectValue placeholder="Select a model" />
+          </SelectTrigger>
+          <SelectContent>
+            {modelCatalog.chatModels.map((model) => (
+              <SelectItem key={model.id} value={model.id}>
+                {model.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
 
       <Field label="Embedding model">
-        <input
-          value={embedModel}
-          onChange={(e) => setEmbedModel(e.target.value)}
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-        />
+        <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/30 px-3 font-mono text-sm text-muted-foreground">
+          {embedModel || "No dataset selected"}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Set when the dataset was created.
+        </p>
       </Field>
 
       <Slider

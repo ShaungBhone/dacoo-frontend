@@ -1,16 +1,13 @@
 "use client"
 
 import * as React from "react"
+import { DatabaseIcon } from "lucide-react"
 
-import {
-  PROMPT_TEMPLATES,
-  SAMPLE_QUERIES,
-  type PromptTemplate,
-} from "@/components/rag/data"
+import { AGENTS, SAMPLE_QUERIES, type Agent } from "@/components/rag/data"
 import {
   QueryBar,
-  TemplateDialog,
-  type TemplateDialogState,
+  AgentDialog,
+  type AgentDialogState,
 } from "@/components/rag/query-bar"
 import { AnswerPanel } from "@/components/rag/answer-panel"
 import { useRag } from "@/components/rag/rag-context"
@@ -24,6 +21,13 @@ import {
   type ContextBudget,
   type RunResult,
 } from "@/components/rag/retrieval"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 
 export function DashboardConsole() {
   const [query, setQuery] = React.useState(SAMPLE_QUERIES[0])
@@ -34,11 +38,9 @@ export function DashboardConsole() {
   const [error, setError] = React.useState<string | null>(null)
   const stopStreamRef = React.useRef<(() => void) | null>(null)
 
-  const [templates, setTemplates] =
-    React.useState<PromptTemplate[]>(PROMPT_TEMPLATES)
-  const [templateId, setTemplateId] = React.useState(PROMPT_TEMPLATES[0].id)
-  const [templateDialog, setTemplateDialog] =
-    React.useState<TemplateDialogState>(null)
+  const [agents, setAgents] = React.useState<Agent[]>(AGENTS)
+  const [agentId, setAgentId] = React.useState(AGENTS[0].id)
+  const [agentDialog, setAgentDialog] = React.useState<AgentDialogState>(null)
 
   const organization = useActiveOrganization()
   const {
@@ -50,22 +52,19 @@ export function DashboardConsole() {
     setRunResult,
   } = useRag()
 
-  const activeTemplate =
-    templates.find((t) => t.id === templateId) ?? templates[0]
+  const activeAgent = agents.find((a) => a.id === agentId) ?? agents[0]
 
-  function upsertTemplate(
-    input: Omit<PromptTemplate, "id"> & { id?: string }
-  ) {
+  function upsertAgent(input: Omit<Agent, "id"> & { id?: string }) {
     if (input.id) {
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === input.id ? { ...t, ...input, id: t.id } : t))
+      setAgents((prev) =>
+        prev.map((a) => (a.id === input.id ? { ...a, ...input, id: a.id } : a))
       )
     } else {
-      const id = `tpl-${Date.now()}`
-      setTemplates((prev) => [...prev, { ...input, id }])
-      setTemplateId(id)
+      const id = `agent-${Date.now()}`
+      setAgents((prev) => [...prev, { ...input, id }])
+      setAgentId(id)
     }
-    setTemplateDialog(null)
+    setAgentDialog(null)
   }
 
   const runQuery = React.useCallback(
@@ -84,7 +83,7 @@ export function DashboardConsole() {
       try {
         const response = await runDatasetQuery(organization.id, datasetId, {
           query: submittedQuery,
-          system_prompt: activeTemplate.system,
+          system_prompt: activeAgent.system,
           model: genModel,
         })
 
@@ -92,7 +91,7 @@ export function DashboardConsole() {
           submittedQuery,
           response.chunks,
           genModel,
-          activeTemplate.system
+          activeAgent.system
         )
         setRunBudget(budget)
 
@@ -100,7 +99,7 @@ export function DashboardConsole() {
           submittedQuery,
           response.chunks,
           genModel,
-          activeTemplate.system
+          activeAgent.system
         )
 
         const allBullets = response.structured.sections.flatMap(
@@ -154,7 +153,7 @@ export function DashboardConsole() {
       isRunning,
       organization,
       datasetId,
-      activeTemplate,
+      activeAgent,
       genModel,
       setRunResult,
     ]
@@ -168,6 +167,8 @@ export function DashboardConsole() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, datasetId])
 
+  const hasNoDatasets = !isLoadingDatasets && datasets.length === 0
+
   return (
     <div className="flex h-full flex-col gap-6">
       <header className="flex shrink-0 flex-col gap-1">
@@ -180,14 +181,21 @@ export function DashboardConsole() {
         </p>
       </header>
 
-      {!isLoadingDatasets && datasets.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No datasets yet. Create one from the Datasets page before running a
-          query.
-        </p>
-      ) : (
-        <>
-          <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
+        {hasNoDatasets ? (
+          <Empty className="border p-6">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <DatabaseIcon />
+              </EmptyMedia>
+              <EmptyTitle>No datasets yet</EmptyTitle>
+              <EmptyDescription>
+                Create one from the Datasets page before running a query.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <>
             {error && (
               <p className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 {error}
@@ -201,33 +209,30 @@ export function DashboardConsole() {
                 contextBudget={runBudget ?? undefined}
               />
             )}
-          </div>
+          </>
+        )}
+      </div>
 
-          <div className="-mx-4 shrink-0 bg-background px-4 pt-3 pb-4">
-            <QueryBar
-              query={query}
-              setQuery={setQuery}
-              onRun={runQuery}
-              isRunning={isRunning}
-              templates={templates}
-              templateId={templateId}
-              setTemplateId={setTemplateId}
-              onAddTemplate={() => setTemplateDialog({ mode: "add" })}
-              onEditTemplate={(template) =>
-                setTemplateDialog({ mode: "edit", template })
-              }
-            />
-          </div>
-        </>
-      )}
+      <div className="-mx-4 shrink-0 bg-background px-4 pt-3 pb-4">
+        <QueryBar
+          query={query}
+          setQuery={setQuery}
+          onRun={runQuery}
+          isRunning={isRunning}
+          agents={agents}
+          agentId={agentId}
+          setAgentId={setAgentId}
+          onAddAgent={() => setAgentDialog({ mode: "add" })}
+          onEditAgent={(agent) => setAgentDialog({ mode: "edit", agent })}
+          disabled={hasNoDatasets}
+        />
+      </div>
 
-      {templateDialog && (
-        <TemplateDialog
-          template={
-            templateDialog.mode === "edit" ? templateDialog.template : null
-          }
-          onClose={() => setTemplateDialog(null)}
-          onSave={upsertTemplate}
+      {agentDialog && (
+        <AgentDialog
+          agent={agentDialog.mode === "edit" ? agentDialog.agent : null}
+          onClose={() => setAgentDialog(null)}
+          onSave={upsertAgent}
         />
       )}
     </div>

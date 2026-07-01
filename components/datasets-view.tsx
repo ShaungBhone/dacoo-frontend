@@ -22,15 +22,33 @@ import {
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   createDataset,
   fetchDatasets,
   fetchDocuments,
+  fetchModelCatalog,
   generateDocumentDraft,
   uploadDocument,
   type DatasetSummary,
   type DocStatus,
   type DocumentSummary,
+  type EmbeddingModelOption,
 } from "@/components/rag/api"
 
 const POLL_INTERVAL_MS = 2500
@@ -126,11 +144,16 @@ export function DatasetsView() {
     if (file) handleUpload(file)
   }
 
-  async function handleCreateDataset(name: string, description: string) {
+  async function handleCreateDataset(
+    name: string,
+    description: string,
+    embedModel: string
+  ) {
     if (!organization) return
     const created = await createDataset(organization.id, {
       name,
       description: description || undefined,
+      embed_model: embedModel || undefined,
     })
     setDatasets((prev) => [created, ...prev])
     setActiveId(created.id)
@@ -146,7 +169,7 @@ export function DatasetsView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
+      <div className="mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
         {/* ------------------------------ Left rail ----------------------------- */}
         <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-64">
           <div className="flex items-center justify-between">
@@ -169,9 +192,14 @@ export function DatasetsView() {
               Loading datasets…
             </p>
           ) : datasets.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-              No datasets yet.
-            </p>
+            <Empty className="border p-6 flex-none">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <DatabaseIcon />
+                </EmptyMedia>
+                <EmptyTitle>No datasets yet</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <ul className="flex flex-col gap-1">
               {datasets.map((dataset) => {
@@ -264,11 +292,26 @@ export function DatasetsView() {
           )}
 
           {!active ? (
-            <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              {isLoadingDatasets
-                ? "Loading…"
-                : "Create a dataset to get started."}
-            </p>
+            isLoadingDatasets ? (
+              <div className="flex flex-1 items-center justify-center p-10 text-sm text-muted-foreground">
+                Loading…
+              </div>
+            ) : (
+              <Empty className="border">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <DatabaseIcon />
+                  </EmptyMedia>
+                  <EmptyTitle>Create a dataset to get started</EmptyTitle>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button onClick={() => setNewDatasetOpen(true)}>
+                    <PlusIcon data-icon="inline-start" />
+                    New dataset
+                  </Button>
+                </EmptyContent>
+              </Empty>
+            )
           ) : (
             <>
               <header className="flex flex-col gap-1">
@@ -352,11 +395,52 @@ export function DatasetsView() {
                   </div>
 
                   {filteredDocs.length === 0 ? (
-                    <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      {documents.length === 0
-                        ? "No documents yet. Upload a source to get started."
-                        : `No documents match "${filter}".`}
-                    </p>
+                    documents.length === 0 ? (
+                      <Empty className="p-8">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <FileTextIcon />
+                          </EmptyMedia>
+                          <EmptyTitle>No documents yet</EmptyTitle>
+                          <EmptyDescription>
+                            Upload a source to get started.
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent>
+                          <Button
+                            variant="outline"
+                            onClick={handleUploadClick}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <Loader2Icon data-icon="inline-start" />
+                            ) : (
+                              <UploadIcon data-icon="inline-start" />
+                            )}
+                            Upload source
+                          </Button>
+                        </EmptyContent>
+                      </Empty>
+                    ) : (
+                      <Empty className="p-8">
+                        <EmptyHeader>
+                          <EmptyTitle>
+                            No documents match &ldquo;{filter}&rdquo;
+                          </EmptyTitle>
+                          <EmptyDescription>
+                            Try a different search term.
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent>
+                          <Button
+                            variant="outline"
+                            onClick={() => setFilter("")}
+                          >
+                            Clear filter
+                          </Button>
+                        </EmptyContent>
+                      </Empty>
+                    )
                   ) : (
                     <ul>
                       {filteredDocs.map((doc) => (
@@ -434,21 +518,48 @@ function NewDatasetDialog({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (name: string, description: string) => Promise<void>
+  onCreate: (
+    name: string,
+    description: string,
+    embedModel: string
+  ) => Promise<void>
 }) {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
+  const [embedModel, setEmbedModel] = React.useState("")
+  const [embeddingModels, setEmbeddingModels] = React.useState<
+    EmbeddingModelOption[]
+  >([])
   const [isSaving, setIsSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const canCreate = name.trim().length > 0 && !isSaving
+  // The embedding model can't be changed after creation without re-embedding
+  // every document, so it's chosen here and fixed for the dataset's lifetime.
+  React.useEffect(() => {
+    let active = true
+    fetchModelCatalog()
+      .then((catalog) => {
+        if (!active) return
+        setEmbeddingModels(catalog.embeddingModels)
+        setEmbedModel((current) => current || catalog.embeddingModels[0]?.id || "")
+      })
+      .catch((err) => {
+        console.error("Failed to load embedding models:", err)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const canCreate =
+    name.trim().length > 0 && embedModel.length > 0 && !isSaving
 
   async function handleCreate() {
     if (!canCreate) return
     setIsSaving(true)
     setError(null)
     try {
-      await onCreate(name.trim(), description.trim())
+      await onCreate(name.trim(), description.trim(), embedModel)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create dataset.")
       setIsSaving(false)
@@ -509,6 +620,26 @@ function NewDatasetDialog({
               placeholder="What this dataset is for (optional)"
               className="resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/50"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Embedding model
+            </label>
+            <Select value={embedModel} onValueChange={setEmbedModel}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select an embedding model" />
+              </SelectTrigger>
+              <SelectContent>
+                {embeddingModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Fixed for this dataset — documents are embedded with this model.
+            </p>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>

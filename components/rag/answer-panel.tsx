@@ -508,7 +508,15 @@ function Citation({ n, chunk }: { n: number; chunk?: Retrieved }) {
               <InlineCitationCarouselItem>
                 <InlineCitationSource
                   title={chunk.source}
-                  url={`${chunk.path} · p. ${chunk.page} · ${chunk.tokens} tok`}
+                  url={
+                    [
+                      chunk.path,
+                      chunk.page != null ? `p. ${chunk.page}` : null,
+                      chunk.tokens != null ? `${chunk.tokens} tok` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || undefined
+                  }
                   description={`Score ${chunk.score.toFixed(3)}`}
                 />
                 <InlineCitationQuote>{chunk.text}</InlineCitationQuote>

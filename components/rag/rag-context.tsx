@@ -7,8 +7,13 @@ import {
   type Doc,
   type RunResult,
 } from "@/components/rag/retrieval"
-import { fetchDatasets, type DatasetSummary } from "@/components/rag/api"
-import { PROMPT_TEMPLATES } from "@/components/rag/data"
+import {
+  fetchDatasets,
+  fetchModelCatalog,
+  type DatasetSummary,
+  type ModelCatalog,
+} from "@/components/rag/api"
+import { AGENTS } from "@/components/rag/data"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 
 // Rough average tokens per retrieved chunk, used only to preview the context
@@ -26,11 +31,12 @@ export type RagConfig = {
 type RagContextValue = {
   config: RagConfig
   setGenModel: (v: string) => void
-  setEmbedModel: (v: string) => void
   setTopK: (v: number) => void
   setTemperature: (v: number) => void
   setRerank: (v: boolean) => void
   contextBudget: ContextBudget
+  modelCatalog: ModelCatalog
+  isLoadingModels: boolean
   datasets: DatasetSummary[]
   isLoadingDatasets: boolean
   datasetId: string | null
@@ -51,19 +57,28 @@ export function useRag() {
 }
 
 export function RagProvider({ children }: { children: React.ReactNode }) {
-  const [genModel, setGenModel] = React.useState("gpt-4o")
-  const [embedModel, setEmbedModel] = React.useState(
-    "text-embedding-3-large"
-  )
+  const [genModel, setGenModel] = React.useState("")
   const [topK, setTopK] = React.useState(4)
   const [temperature, setTemperature] = React.useState(0.2)
   const [rerank, setRerank] = React.useState(true)
   const [runResult, setRunResult] = React.useState<RunResult | null>(null)
 
+  const [modelCatalog, setModelCatalog] = React.useState<ModelCatalog>({
+    chatModels: [],
+    embeddingModels: [],
+  })
+  const [isLoadingModels, setIsLoadingModels] = React.useState(true)
+
   const organization = useActiveOrganization()
   const [datasets, setDatasets] = React.useState<DatasetSummary[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = React.useState(true)
   const [datasetId, setDatasetId] = React.useState<string | null>(null)
+
+  // The embedding model is fixed per dataset (it must match how the dataset's
+  // documents were embedded), so it is derived from the active dataset rather
+  // than being independently editable in the Playground.
+  const embedModel =
+    datasets.find((d) => d.id === datasetId)?.embedModel ?? ""
 
   const refreshDatasets = React.useCallback(async () => {
     if (!organization) return
@@ -83,9 +98,28 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
     }
   }, [organization])
 
+  const refreshModelCatalog = React.useCallback(async () => {
+    setIsLoadingModels(true)
+    try {
+      const catalog = await fetchModelCatalog()
+      setModelCatalog(catalog)
+      // Default the generation model to the first available option, so we never
+      // ship a default that a deployment's configured provider keys don't offer.
+      setGenModel((current) => current || catalog.chatModels[0]?.id || "")
+    } catch (error) {
+      console.error("Failed to load model catalog:", error)
+    } finally {
+      setIsLoadingModels(false)
+    }
+  }, [])
+
   React.useEffect(() => {
     refreshDatasets()
   }, [refreshDatasets])
+
+  React.useEffect(() => {
+    refreshModelCatalog()
+  }, [refreshModelCatalog])
 
   // Compute a representative context budget using an average chunk-size
   // estimate and the default system prompt so the meter updates live before
@@ -98,7 +132,7 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       text: "",
       tokens: AVERAGE_CHUNK_TOKENS,
     }))
-    const defaultSystem = PROMPT_TEMPLATES[0].system
+    const defaultSystem = AGENTS[0].system
     return computeContextBudget(
       "sample query for budget estimation",
       estimatedChunks,
@@ -111,11 +145,12 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
     () => ({
       config: { genModel, embedModel, topK, temperature, rerank },
       setGenModel,
-      setEmbedModel,
       setTopK,
       setTemperature,
       setRerank,
       contextBudget,
+      modelCatalog,
+      isLoadingModels,
       datasets,
       isLoadingDatasets,
       datasetId,
@@ -131,6 +166,8 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       temperature,
       rerank,
       contextBudget,
+      modelCatalog,
+      isLoadingModels,
       datasets,
       isLoadingDatasets,
       datasetId,
