@@ -19,7 +19,6 @@ import {
   TerminalIcon,
   TerminalSquareIcon,
   BookOpenIcon,
-  Settings2Icon,
   DatabaseIcon,
   FlaskConicalIcon,
   ScrollTextIcon,
@@ -57,7 +56,6 @@ const data = {
     { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
     { title: "Logs", url: "/logs", icon: <ScrollTextIcon /> },
     { title: "Docs", url: "/docs", icon: <BookOpenIcon /> },
-    { title: "Settings", url: "/settings", icon: <Settings2Icon /> },
   ],
 }
 

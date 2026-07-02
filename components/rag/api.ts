@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api"
 import type { Retrieved, StructuredAnswer } from "@/components/rag/retrieval"
+import type { QuerySuggestion } from "./data"
 
 export type DocStatus = "ready" | "indexing" | "failed"
 
@@ -34,6 +35,8 @@ export type QueryResponse = {
   latencyMs: number
   tokens: number
   model: string
+  // false when no indexed chunk was relevant enough to answer from.
+  grounded: boolean
 }
 
 export type ModelOption = {
@@ -99,6 +102,18 @@ export async function uploadDocument(
   return res.data
 }
 
+export async function retryDocumentIngestion(
+  organizationId: number,
+  datasetId: string,
+  documentId: string
+): Promise<DocumentSummary> {
+  const res = await apiFetch<{ data: DocumentSummary }>(
+    `/api/v1/organizations/${organizationId}/datasets/${datasetId}/documents/${documentId}/retry`,
+    { method: "POST" }
+  )
+  return res.data
+}
+
 export async function generateDocumentDraft(
   organizationId: number,
   datasetId: string,
@@ -118,5 +133,89 @@ export async function runDatasetQuery(
   return apiFetch(
     `/api/v1/organizations/${organizationId}/datasets/${datasetId}/query`,
     { method: "POST", body: input }
+  )
+}
+
+export async function fetchSuggestions(
+  organizationId: number,
+  datasetId: string,
+  input: { systemPrompt: string; agentLabel?: string; lastQuery?: string | null }
+): Promise<QuerySuggestion[]> {
+  const res = await apiFetch<{ suggestions: QuerySuggestion[] }>(
+    `/api/v1/organizations/${organizationId}/datasets/${datasetId}/suggestions`,
+    {
+      method: "POST",
+      body: {
+        system_prompt: input.systemPrompt,
+        agent_label: input.agentLabel,
+        last_query: input.lastQuery || undefined,
+      },
+    }
+  )
+  return res.suggestions
+}
+
+export type AgentSummary = {
+  id: string
+  name: string
+  label: string // Required alias for compatibility
+  description: string
+  system: string
+  status: "active" | "inactive" | "draft"
+  messageCount: number
+  createdAt: string
+}
+
+export async function fetchAgents(
+  organizationId: number
+): Promise<AgentSummary[]> {
+  const res = await apiFetch<{ data: AgentSummary[] }>(
+    `/api/v1/organizations/${organizationId}/agents`
+  )
+  return res.data.map(agent => ({
+    ...agent,
+    description: agent.description || "",
+    label: agent.name // Map name to label for compatibility
+  }))
+}
+
+export async function createAgent(
+  organizationId: number,
+  input: { name: string; description?: string; system: string; status: string }
+): Promise<AgentSummary> {
+  const res = await apiFetch<{ data: AgentSummary }>(
+    `/api/v1/organizations/${organizationId}/agents`,
+    { method: "POST", body: input }
+  )
+  return {
+    ...res.data,
+    description: res.data.description || "",
+    label: res.data.name
+  }
+}
+
+export async function updateAgent(
+  organizationId: number,
+  agentId: string,
+  input: { name: string; description?: string; system: string; status: string }
+): Promise<AgentSummary> {
+  const res = await apiFetch<{ data: AgentSummary }>(
+    `/api/v1/organizations/${organizationId}/agents/${agentId}`,
+    { method: "PUT", body: input }
+  )
+  return {
+    ...res.data,
+    description: res.data.description || "",
+    label: res.data.name
+  }
+}
+
+export async function deleteAgent(
+  organizationId: number,
+  agentId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/v1/organizations/${organizationId}/agents/${agentId}`,
+    { method: "DELETE" }
   )
 }

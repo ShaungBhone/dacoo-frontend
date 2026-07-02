@@ -10,11 +10,33 @@ import {
   AlignLeftIcon,
   PlusIcon,
   PencilIcon,
-  XIcon,
   CheckIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorName,
+} from "@/components/ai-elements/model-selector"
 import {
   PromptInput,
   PromptInputBody,
@@ -36,12 +58,11 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
-import { AGENTS, SAMPLE_QUERIES, type Agent } from "@/components/rag/data"
+import { useRag } from "@/components/rag/rag-context"
+import { AGENTS, type Agent, type QuerySuggestion } from "@/components/rag/data"
 
 export type AgentDialogState =
-  | { mode: "add" }
-  | { mode: "edit"; agent: Agent }
-  | null
+  { mode: "add" } | { mode: "edit"; agent: Agent } | null
 
 export function QueryBar({
   query,
@@ -51,6 +72,7 @@ export function QueryBar({
   agents,
   agentId,
   setAgentId,
+  suggestions,
   onAddAgent,
   onEditAgent,
   disabled,
@@ -62,14 +84,43 @@ export function QueryBar({
   agents: Agent[]
   agentId: string
   setAgentId: (id: string) => void
+  suggestions: QuerySuggestion[]
   onAddAgent: () => void
   onEditAgent: (agent: Agent) => void
   disabled?: boolean
 }) {
   const [previewAgentId, setPreviewAgentId] = React.useState(agentId)
-  const active = agents.find((a) => a.id === agentId) ?? agents[0]
-  const previewAgent =
-    agents.find((a) => a.id === previewAgentId) ?? active
+  const [modelPickerOpen, setModelPickerOpen] = React.useState(false)
+
+  const active = agents.find((a) => a.id === agentId) ?? agents[0] ?? {
+    id: "loading",
+    label: "Loading...",
+    description: "Please wait...",
+    system: "",
+  }
+  const previewAgent = agents.find((a) => a.id === previewAgentId) ?? active
+
+  React.useEffect(() => {
+    if (agentId) {
+      setPreviewAgentId(agentId)
+    }
+  }, [agentId])
+
+  const {
+    config: { genModel },
+    modelCatalog,
+    isLoadingModels,
+  } = useRag()
+
+  const activeModel =
+    modelCatalog.chatModels.find((m) => m.id === genModel) ?? null
+  const modelLabel = activeModel?.label ?? (genModel || "Select model")
+  const modelDisabled =
+    disabled || isLoadingModels || modelCatalog.chatModels.length === 0
+  const suggestionsLabel =
+    suggestions.length === 1
+      ? "1 suggestion"
+      : `${suggestions.length} suggestions`
 
   function handleSubmit(message: PromptInputMessage) {
     const nextQuery = message.text.trim()
@@ -131,7 +182,7 @@ export function QueryBar({
                             setAgentId(agent.id)
                             setPreviewAgentId(agent.id)
                           }}
-                          className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40"
+                          className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                         >
                           <AgentIcon id={agent.id} />
                           <span className="min-w-0 flex-1">
@@ -150,7 +201,7 @@ export function QueryBar({
                           type="button"
                           onClick={() => onEditAgent(agent)}
                           aria-label={`Edit ${agent.label}`}
-                          className="flex size-7 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-70 transition-colors hover:bg-background hover:text-foreground group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/40"
+                          className="flex size-7 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-70 transition-colors group-hover:opacity-100 hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
                         >
                           <PencilIcon className="size-3.5" />
                         </button>
@@ -159,8 +210,8 @@ export function QueryBar({
                   })}
                 </div>
 
-                <div className="border-t border-border bg-muted/30 p-3 md:border-l md:border-t-0">
-                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="border-t border-border bg-muted/30 p-3 md:border-t-0 md:border-l">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     <AgentIcon id={previewAgent.id} />
                     {previewAgent.label}
                   </p>
@@ -174,36 +225,49 @@ export function QueryBar({
 
           <PromptInputHoverCard>
             <PromptInputHoverCardTrigger asChild>
-              <PromptInputButton size="sm" variant="outline" disabled={disabled}>
+              <PromptInputButton
+                size="sm"
+                variant="outline"
+                disabled={disabled}
+              >
                 <SparklesIcon className="size-3.5" />
-                <span>Suggestions</span>
+                <span>{suggestionsLabel}</span>
               </PromptInputButton>
             </PromptInputHoverCardTrigger>
             <PromptInputHoverCardContent className="w-[min(92vw,440px)] overflow-hidden p-0">
               <PromptInputCommand>
                 <PromptInputCommandInput
                   className="border-none focus-visible:ring-0"
-                  placeholder="Find a sample query..."
+                  placeholder="Find a suggestion..."
                 />
                 <PromptInputCommandList>
                   <PromptInputCommandEmpty className="p-3 text-sm text-muted-foreground">
-                    No sample query found.
+                    No suggestion found.
                   </PromptInputCommandEmpty>
-                  <PromptInputCommandGroup heading="Sample queries">
-                    {SAMPLE_QUERIES.map((sampleQuery) => (
+                  <PromptInputCommandGroup
+                    heading={`${active.label} suggestions`}
+                  >
+                    {suggestions.map((suggestion) => (
                       <PromptInputCommandItem
-                        key={sampleQuery}
-                        onSelect={() => setQuery(sampleQuery)}
+                        key={suggestion.id}
+                        value={suggestion.query}
+                        onSelect={() => setQuery(suggestion.query)}
                       >
                         <SparklesIcon className="text-primary" />
-                        <span className="line-clamp-2">{sampleQuery}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">
+                            {suggestion.label}
+                          </span>
+                          <span className="line-clamp-2 text-xs text-muted-foreground">
+                            {suggestion.query}
+                          </span>
+                        </span>
                       </PromptInputCommandItem>
                     ))}
                   </PromptInputCommandGroup>
                   <PromptInputCommandSeparator />
-                  <p className="px-3 pb-2 pt-1 text-xs text-muted-foreground">
-                    Selecting a suggestion fills the input so it can be edited
-                    before running.
+                  <p className="px-3 pt-1 pb-2 text-xs text-muted-foreground">
+                    Suggestions update with the selected agent and dataset.
                   </p>
                 </PromptInputCommandList>
               </PromptInputCommand>
@@ -223,6 +287,18 @@ export function QueryBar({
 
         <PromptInputFooter>
           <PromptInputTools>
+            <PromptInputButton
+              size="sm"
+              variant="outline"
+              disabled={modelDisabled}
+              onClick={() => setModelPickerOpen(true)}
+              tooltip="Generation model"
+            >
+              <SparklesIcon className="size-3.5" />
+              <span className="max-w-32 truncate">
+                {isLoadingModels ? "Loading…" : modelLabel}
+              </span>
+            </PromptInputButton>
             <span className="truncate text-xs text-muted-foreground">
               Retrieval testing
             </span>
@@ -234,7 +310,70 @@ export function QueryBar({
           />
         </PromptInputFooter>
       </PromptInput>
+
+      <ModelPicker open={modelPickerOpen} onOpenChange={setModelPickerOpen} />
     </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                            Generation model picker                          */
+/* -------------------------------------------------------------------------- */
+
+function ModelPicker({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const {
+    config: { genModel },
+    setGenModel,
+    modelCatalog,
+  } = useRag()
+
+  const providers = React.useMemo(() => {
+    const seen = new Map<string, boolean>()
+    for (const m of modelCatalog.chatModels) {
+      if (!seen.has(m.provider)) seen.set(m.provider, true)
+    }
+    return [...seen.keys()]
+  }, [modelCatalog.chatModels])
+
+  function handleSelect(id: string) {
+    setGenModel(id)
+    onOpenChange(false)
+  }
+
+  return (
+    <ModelSelector open={open} onOpenChange={onOpenChange}>
+      <ModelSelectorContent title="Select generation model">
+        <ModelSelectorInput placeholder="Search models…" />
+        <ModelSelectorList>
+          <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+          {providers.map((provider) => (
+            <ModelSelectorGroup key={provider} heading={provider}>
+              {modelCatalog.chatModels
+                .filter((m) => m.provider === provider)
+                .map((m) => (
+                  <ModelSelectorItem
+                    key={m.id}
+                    value={m.id}
+                    onSelect={() => handleSelect(m.id)}
+                  >
+                    <ModelSelectorLogo provider={m.provider.toLowerCase()} />
+                    <ModelSelectorName>{m.label}</ModelSelectorName>
+                    {m.id === genModel && (
+                      <CheckIcon className="ml-auto size-4" />
+                    )}
+                  </ModelSelectorItem>
+                ))}
+            </ModelSelectorGroup>
+          ))}
+        </ModelSelectorList>
+      </ModelSelectorContent>
+    </ModelSelector>
   )
 }
 
@@ -266,9 +405,7 @@ export function AgentDialog({
 }) {
   const isEdit = agent != null
   const [label, setLabel] = React.useState(agent?.label ?? "")
-  const [description, setDescription] = React.useState(
-    agent?.description ?? ""
-  )
+  const [description, setDescription] = React.useState(agent?.description ?? "")
   const [system, setSystem] = React.useState(agent?.system ?? "")
 
   const canSave = label.trim().length > 0 && system.trim().length > 0
@@ -284,115 +421,67 @@ export function AgentDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={isEdit ? "Edit agent" : "Add agent"}
-    >
-      <button
-        type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
-        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
-      />
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <SparklesIcon className="size-4" />
+            </span>
+            {isEdit ? "Edit agent" : "New agent"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Adjust how this agent instructs the model."
+              : "Define a reusable agent persona for your answers."}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="relative flex max-h-[85svh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <SparklesIcon className="size-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold">
-              {isEdit ? "Edit agent" : "New agent"}
-            </h2>
-            <p className="truncate text-xs text-muted-foreground">
-              {isEdit
-                ? "Adjust how this agent instructs the model."
-                : "Define a reusable agent persona for your answers."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <XIcon className="size-4" />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="agent-label"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              Name
-            </label>
-            <input
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="agent-label">Name</FieldLabel>
+            <Input
               id="agent-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Technical writer"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
             />
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="agent-desc"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              Description
-            </label>
-            <input
+          <Field>
+            <FieldLabel htmlFor="agent-desc">Description</FieldLabel>
+            <Input
               id="agent-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short hint shown on hover (optional)"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
             />
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="agent-system"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              System prompt
-            </label>
-            <textarea
+          <Field>
+            <FieldLabel htmlFor="agent-system">System prompt</FieldLabel>
+            <Textarea
               id="agent-system"
               value={system}
               onChange={(e) => setSystem(e.target.value)}
               rows={6}
               placeholder="You are a… Answer using only the context provided below."
-              className="resize-none rounded-md border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed outline-none transition-colors focus:border-primary/50"
+              className="font-mono text-xs leading-relaxed"
             />
-          </div>
-        </div>
+          </Field>
+        </FieldGroup>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <CheckIcon className="size-4" />
+          </Button>
+          <Button onClick={handleSave} disabled={!canSave}>
+            <CheckIcon data-icon="inline-start" />
             {isEdit ? "Save changes" : "Add agent"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

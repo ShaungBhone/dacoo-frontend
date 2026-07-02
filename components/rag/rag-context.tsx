@@ -10,10 +10,13 @@ import {
 import {
   fetchDatasets,
   fetchModelCatalog,
+  fetchDocuments,
+  fetchAgents,
   type DatasetSummary,
   type ModelCatalog,
+  type DocumentSummary,
+  type AgentSummary,
 } from "@/components/rag/api"
-import { AGENTS } from "@/components/rag/data"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 
 // Rough average tokens per retrieved chunk, used only to preview the context
@@ -44,6 +47,16 @@ type RagContextValue = {
   refreshDatasets: () => Promise<void>
   runResult: RunResult | null
   setRunResult: (result: RunResult | null) => void
+  
+  // Dynamic Documents state
+  documents: DocumentSummary[]
+  isLoadingDocuments: boolean
+  refreshDocuments: () => Promise<void>
+  
+  // Dynamic Agents state
+  agents: AgentSummary[]
+  isLoadingAgents: boolean
+  refreshAgents: () => Promise<void>
 }
 
 const RagContext = React.createContext<RagContextValue | null>(null)
@@ -73,6 +86,12 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   const [datasets, setDatasets] = React.useState<DatasetSummary[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = React.useState(true)
   const [datasetId, setDatasetId] = React.useState<string | null>(null)
+
+  // Dynamic Documents & Agents state
+  const [documents, setDocuments] = React.useState<DocumentSummary[]>([])
+  const [isLoadingDocuments, setIsLoadingDocuments] = React.useState(false)
+  const [agents, setAgents] = React.useState<AgentSummary[]>([])
+  const [isLoadingAgents, setIsLoadingAgents] = React.useState(true)
 
   // The embedding model is fixed per dataset (it must match how the dataset's
   // documents were embedded), so it is derived from the active dataset rather
@@ -113,6 +132,35 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const refreshDocuments = React.useCallback(async () => {
+    if (!organization || !datasetId) {
+      setDocuments([])
+      return
+    }
+    setIsLoadingDocuments(true)
+    try {
+      const docs = await fetchDocuments(organization.id, datasetId)
+      setDocuments(docs)
+    } catch (error) {
+      console.error("Failed to load documents:", error)
+    } finally {
+      setIsLoadingDocuments(false)
+    }
+  }, [organization, datasetId])
+
+  const refreshAgents = React.useCallback(async () => {
+    if (!organization) return
+    setIsLoadingAgents(true)
+    try {
+      const list = await fetchAgents(organization.id)
+      setAgents(list)
+    } catch (error) {
+      console.error("Failed to load agents:", error)
+    } finally {
+      setIsLoadingAgents(false)
+    }
+  }, [organization])
+
   React.useEffect(() => {
     refreshDatasets()
   }, [refreshDatasets])
@@ -120,6 +168,14 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     refreshModelCatalog()
   }, [refreshModelCatalog])
+
+  React.useEffect(() => {
+    refreshDocuments()
+  }, [refreshDocuments])
+
+  React.useEffect(() => {
+    refreshAgents()
+  }, [refreshAgents])
 
   // Compute a representative context budget using an average chunk-size
   // estimate and the default system prompt so the meter updates live before
@@ -132,14 +188,14 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       text: "",
       tokens: AVERAGE_CHUNK_TOKENS,
     }))
-    const defaultSystem = AGENTS[0].system
+    const defaultSystem = agents[0]?.system || "You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so."
     return computeContextBudget(
       "sample query for budget estimation",
       estimatedChunks,
       genModel,
       defaultSystem
     )
-  }, [genModel, topK])
+  }, [genModel, topK, agents])
 
   const value = React.useMemo<RagContextValue>(
     () => ({
@@ -158,6 +214,12 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       refreshDatasets,
       runResult,
       setRunResult,
+      documents,
+      isLoadingDocuments,
+      refreshDocuments,
+      agents,
+      isLoadingAgents,
+      refreshAgents,
     }),
     [
       genModel,
@@ -171,8 +233,16 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       datasets,
       isLoadingDatasets,
       datasetId,
+      setDatasetId,
       refreshDatasets,
       runResult,
+      setRunResult,
+      documents,
+      isLoadingDocuments,
+      refreshDocuments,
+      agents,
+      isLoadingAgents,
+      refreshAgents,
     ]
   )
 

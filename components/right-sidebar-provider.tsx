@@ -62,7 +62,7 @@ export function RightSidebarProvider({
   React.useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (
-        event.key.toLowerCase() === SHORTCUT_KEY &&
+        event.key?.toLowerCase() === SHORTCUT_KEY &&
         (event.metaKey || event.ctrlKey)
       ) {
         event.preventDefault()

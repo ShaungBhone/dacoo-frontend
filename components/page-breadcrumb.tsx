@@ -18,7 +18,6 @@ const LABELS: Record<string, string> = {
   "/experiments": "Experiments",
   "/logs": "Logs",
   "/docs": "Docs",
-  "/settings": "Settings",
 }
 
 export function PageBreadcrumb() {

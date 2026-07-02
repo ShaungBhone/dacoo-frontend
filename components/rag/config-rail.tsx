@@ -9,25 +9,15 @@ import {
   Slider,
   Toggle,
 } from "@/components/rag/primitives"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useRag } from "@/components/rag/rag-context"
 
 export function ConfigRail() {
   const {
-    config: { genModel, embedModel, topK, temperature, rerank },
-    setGenModel,
+    config: { embedModel, topK, temperature, rerank },
     setTopK,
     setTemperature,
     setRerank,
     contextBudget,
-    modelCatalog,
-    isLoadingModels,
   } = useRag()
 
   return (
@@ -35,25 +25,6 @@ export function ConfigRail() {
       <RailHeading icon={<SlidersHorizontalIcon className="size-3.5" />}>
         Retrieval config
       </RailHeading>
-
-      <Field label="Generation model">
-        <Select
-          value={genModel}
-          onValueChange={setGenModel}
-          disabled={isLoadingModels || modelCatalog.chatModels.length === 0}
-        >
-          <SelectTrigger className="h-9 w-full font-mono text-sm">
-            <SelectValue placeholder="Select a model" />
-          </SelectTrigger>
-          <SelectContent>
-            {modelCatalog.chatModels.map((model) => (
-              <SelectItem key={model.id} value={model.id}>
-                {model.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
 
       <Field label="Embedding model">
         <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/30 px-3 font-mono text-sm text-muted-foreground">

@@ -1,9 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { DatabaseIcon } from "lucide-react"
+import {
+  DatabaseIcon,
+  SearchXIcon,
+  SearchIcon,
+  BarChart2Icon,
+  ListChecksIcon,
+  ZapIcon,
+  type LucideIcon,
+} from "lucide-react"
 
-import { AGENTS, SAMPLE_QUERIES, type Agent } from "@/components/rag/data"
+import { cn } from "@/lib/utils"
+import { type Agent, type QuerySuggestion } from "@/components/rag/data"
+import { Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning"
+import { CollapsibleContent } from "@/components/ui/collapsible"
 import {
   QueryBar,
   AgentDialog,
@@ -12,7 +23,12 @@ import {
 import { AnswerPanel } from "@/components/rag/answer-panel"
 import { useRag } from "@/components/rag/rag-context"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
-import { runDatasetQuery } from "@/components/rag/api"
+import {
+  runDatasetQuery,
+  createAgent,
+  updateAgent,
+  fetchSuggestions,
+} from "@/components/rag/api"
 import { ApiError } from "@/lib/api"
 import {
   buildPromptPreview,
@@ -30,7 +46,7 @@ import {
 } from "@/components/ui/empty"
 
 export function DashboardConsole() {
-  const [query, setQuery] = React.useState(SAMPLE_QUERIES[0])
+  const [query, setQuery] = React.useState("")
   const [isRunning, setIsRunning] = React.useState(false)
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [runBudget, setRunBudget] = React.useState<ContextBudget | null>(null)
@@ -38,31 +54,80 @@ export function DashboardConsole() {
   const [error, setError] = React.useState<string | null>(null)
   const stopStreamRef = React.useRef<(() => void) | null>(null)
 
-  const [agents, setAgents] = React.useState<Agent[]>(AGENTS)
-  const [agentId, setAgentId] = React.useState(AGENTS[0].id)
-  const [agentDialog, setAgentDialog] = React.useState<AgentDialogState>(null)
-
   const organization = useActiveOrganization()
   const {
     config: { genModel },
     datasetId,
     datasets,
     isLoadingDatasets,
+    agents,
+    refreshAgents,
     runResult: result,
     setRunResult,
   } = useRag()
 
-  const activeAgent = agents.find((a) => a.id === agentId) ?? agents[0]
+  const [agentId, setAgentId] = React.useState("")
+  const [agentDialog, setAgentDialog] = React.useState<AgentDialogState>(null)
 
-  function upsertAgent(input: Omit<Agent, "id"> & { id?: string }) {
-    if (input.id) {
-      setAgents((prev) =>
-        prev.map((a) => (a.id === input.id ? { ...a, ...input, id: a.id } : a))
-      )
-    } else {
-      const id = `agent-${Date.now()}`
-      setAgents((prev) => [...prev, { ...input, id }])
-      setAgentId(id)
+  React.useEffect(() => {
+    if (agents.length > 0 && !agentId) {
+      setAgentId(agents[0].id)
+    }
+  }, [agents, agentId])
+
+  const activeAgent = agents.find((a) => a.id === agentId) ?? agents[0]
+  const activeDataset = datasets.find((d) => d.id === datasetId) ?? null
+
+  const [suggestions, setSuggestions] = React.useState<QuerySuggestion[]>([])
+
+  React.useEffect(() => {
+    if (!organization || !datasetId || !activeAgent) {
+      setSuggestions([])
+      return
+    }
+
+    let cancelled = false
+
+    fetchSuggestions(organization.id, datasetId, {
+      systemPrompt: activeAgent.system,
+      agentLabel: activeAgent.label,
+      lastQuery: result?.query,
+    })
+      .then((next) => {
+        if (!cancelled) setSuggestions(next)
+      })
+      .catch((error) => {
+        console.error("Failed to load query suggestions:", error)
+        if (!cancelled) setSuggestions([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [organization, datasetId, activeAgent, result?.query])
+
+  async function upsertAgent(input: Omit<Agent, "id"> & { id?: string; status?: string }) {
+    if (!organization) return
+    try {
+      if (input.id) {
+        await updateAgent(organization.id, input.id, {
+          name: input.label,
+          description: input.description,
+          system: input.system,
+          status: "active",
+        })
+      } else {
+        const created = await createAgent(organization.id, {
+          name: input.label,
+          description: input.description,
+          system: input.system,
+          status: "active",
+        })
+        setAgentId(created.id)
+      }
+      await refreshAgents()
+    } catch (error) {
+      console.error("Failed to upsert agent in playground:", error)
     }
     setAgentDialog(null)
   }
@@ -83,7 +148,7 @@ export function DashboardConsole() {
       try {
         const response = await runDatasetQuery(organization.id, datasetId, {
           query: submittedQuery,
-          system_prompt: activeAgent.system,
+          system_prompt: activeAgent?.system || "",
           model: genModel,
         })
 
@@ -91,7 +156,7 @@ export function DashboardConsole() {
           submittedQuery,
           response.chunks,
           genModel,
-          activeAgent.system
+          activeAgent?.system || ""
         )
         setRunBudget(budget)
 
@@ -99,7 +164,7 @@ export function DashboardConsole() {
           submittedQuery,
           response.chunks,
           genModel,
-          activeAgent.system
+          activeAgent?.system || ""
         )
 
         const allBullets = response.structured.sections.flatMap(
@@ -123,15 +188,23 @@ export function DashboardConsole() {
               ? Math.round((0.82 + topScore * 0.13) * 100)
               : null,
           relevance:
-            topScore != null
-              ? Math.round((0.7 + topScore * 0.2) * 100)
-              : null,
+            topScore != null ? Math.round((0.7 + topScore * 0.2) * 100) : null,
           model: response.model,
+          grounded: response.grounded,
         }
 
         setIsRunning(false)
-        setIsStreaming(true)
         setRunResult(pendingResult)
+
+        // No relevant context: show the result immediately, skip the typing
+        // animation (there's no grounded answer to stream).
+        if (!response.grounded) {
+          setIsStreaming(false)
+          setStreamedText(fullText)
+          return
+        }
+
+        setIsStreaming(true)
 
         stopStreamRef.current = streamText(
           fullText,
@@ -159,23 +232,15 @@ export function DashboardConsole() {
     ]
   )
 
-  const hasAutoRun = React.useRef(false)
-  React.useEffect(() => {
-    if (hasAutoRun.current || !organization || !datasetId) return
-    hasAutoRun.current = true
-    void runQuery()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization, datasetId])
-
   const hasNoDatasets = !isLoadingDatasets && datasets.length === 0
 
   return (
-    <div className="flex h-full flex-col gap-6">
+    <div className="flex h-full flex-col gap-2">
       <header className="flex shrink-0 flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight text-pretty">
           Retrieval testing console
         </h1>
-        <p className="text-sm text-muted-foreground text-pretty">
+        <p className="text-sm text-pretty text-muted-foreground">
           Run a query, inspect the generated answer, and trace every claim back
           to its source chunk.
         </p>
@@ -201,19 +266,37 @@ export function DashboardConsole() {
                 {error}
               </p>
             )}
-            {result && (
-              <AnswerPanel
-                result={result}
-                isStreaming={isStreaming}
-                streamedText={streamedText}
-                contextBudget={runBudget ?? undefined}
-              />
+            {isRunning && <SimulatedReasoning />}
+            {result && !result.grounded ? (
+              <Empty className="border p-6">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <SearchXIcon />
+                  </EmptyMedia>
+                  <EmptyTitle>No relevant information found</EmptyTitle>
+                  <EmptyDescription>
+                    None of your indexed sources matched “{result.query}”
+                    closely enough to answer it. Try rephrasing the question, or
+                    check that the right dataset is selected and has documents
+                    indexed.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              result && (
+                <AnswerPanel
+                  result={result}
+                  isStreaming={isStreaming}
+                  streamedText={streamedText}
+                  contextBudget={runBudget ?? undefined}
+                />
+              )
             )}
           </>
         )}
       </div>
 
-      <div className="-mx-4 shrink-0 bg-background px-4 pt-3 pb-4">
+      <div className="pb-4">
         <QueryBar
           query={query}
           setQuery={setQuery}
@@ -222,6 +305,7 @@ export function DashboardConsole() {
           agents={agents}
           agentId={agentId}
           setAgentId={setAgentId}
+          suggestions={suggestions}
           onAddAgent={() => setAgentDialog({ mode: "add" })}
           onEditAgent={(agent) => setAgentDialog({ mode: "edit", agent })}
           disabled={hasNoDatasets}
@@ -236,5 +320,66 @@ export function DashboardConsole() {
         />
       )}
     </div>
+  )
+}
+
+const REASONING_STEPS: { icon: LucideIcon; text: string }[] = [
+  {
+    icon: SearchIcon,
+    text: "Retrieving candidate document chunks from index...",
+  },
+  {
+    icon: BarChart2Icon,
+    text: "Measuring vector similarity using embedding weights...",
+  },
+  {
+    icon: ListChecksIcon,
+    text: "Reranking and validating evidence against system prompt...",
+  },
+  {
+    icon: ZapIcon,
+    text: "Formatting prompt structure and starting response generation...",
+  },
+]
+
+function SimulatedReasoning() {
+  const [visibleCount, setVisibleCount] = React.useState(1)
+  const [isStreaming, setIsStreaming] = React.useState(true)
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setVisibleCount((prev) => {
+        const next = Math.min(prev + 1, REASONING_STEPS.length)
+        if (next >= REASONING_STEPS.length) {
+          clearInterval(interval)
+          setIsStreaming(false)
+        }
+        return next
+      })
+    }, 450)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <Reasoning className="w-full" isStreaming={isStreaming}>
+      <ReasoningTrigger />
+      <CollapsibleContent
+        className={cn(
+          "mt-4 flex flex-col gap-2 text-sm",
+          "text-muted-foreground outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2"
+        )}
+      >
+        {REASONING_STEPS.slice(0, visibleCount).map((step) => (
+          <div
+            key={step.text}
+            className="flex animate-in items-start gap-2 fade-in-0 slide-in-from-top-1"
+          >
+            <step.icon className="mt-0.5 size-4 shrink-0" />
+            <span>{step.text}</span>
+          </div>
+        ))}
+      </CollapsibleContent>
+    </Reasoning>
   )
 }

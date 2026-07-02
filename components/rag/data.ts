@@ -1,9 +1,9 @@
-export const SAMPLE_QUERIES = [
-  "What is the safe internal temperature for storing fresh poultry?",
-  "How are KYC checks handled when onboarding a new merchant?",
-  "What is the standard SLA for last-mile delivery exceptions?",
-  "Which fees apply to cross-border card settlements?",
-]
+export type QuerySuggestion = {
+  id: string
+  label: string
+  description: string
+  query: string
+}
 
 export type Agent = {
   id: string

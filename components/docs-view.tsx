@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useDocsSearch } from "@/contexts/docs-search-context"
 
 /* -------------------------------------------------------------------------- */
 /*                                   Data                                      */
@@ -40,8 +41,7 @@ const SECTIONS: Section[] = [
 /* -------------------------------------------------------------------------- */
 
 export function DocsView() {
-  const [active, setActive] = React.useState(SECTIONS[0].id)
-  const [query, setQuery] = React.useState("")
+  const { setActiveSectionId } = useDocsSearch()
 
   // Highlight the section currently in view.
   React.useEffect(() => {
@@ -50,7 +50,7 @@ export function DocsView() {
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        if (visible[0]) setActive(visible[0].target.id)
+        if (visible[0]) setActiveSectionId(visible[0].target.id)
       },
       { rootMargin: "-80px 0px -70% 0px", threshold: 0 }
     )
@@ -60,61 +60,11 @@ export function DocsView() {
       if (el) observer.observe(el)
     })
     return () => observer.disconnect()
-  }, [])
-
-  const filtered = SECTIONS.filter((s) =>
-    s.label.toLowerCase().includes(query.trim().toLowerCase())
-  )
+  }, [setActiveSectionId])
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-6 lg:flex-row lg:gap-10 lg:px-6">
-        {/* Section nav */}
-        <aside className="lg:w-60 lg:shrink-0">
-          <div className="lg:sticky lg:top-0">
-            <div className="relative mb-3">
-              <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search guide"
-                className="h-9 w-full rounded-md border border-input bg-transparent pl-8 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-              />
-            </div>
-            <nav className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-              {filtered.map((s) => {
-                const isActive = s.id === active
-                return (
-                  <a
-                    key={s.id}
-                    href={`#${s.id}`}
-                    aria-current={isActive ? "true" : undefined}
-                    className={cn(
-                      "flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                      isActive
-                        ? "bg-primary/10 font-medium text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <s.icon
-                      className={cn(
-                        "size-4 shrink-0",
-                        isActive ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    {s.label}
-                  </a>
-                )
-              })}
-              {filtered.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  No matching sections.
-                </p>
-              )}
-            </nav>
-          </div>
-        </aside>
-
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-8 lg:px-8">
         {/* Content */}
         <main className="flex min-w-0 flex-1 flex-col gap-12">
           {/* Header */}

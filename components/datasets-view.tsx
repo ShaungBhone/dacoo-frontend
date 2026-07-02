@@ -15,14 +15,41 @@ import {
   HashIcon,
   UploadIcon,
   SparklesIcon,
-  XIcon,
   WandSparklesIcon,
+  RotateCwIcon,
+  BotIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
+import { useRouter } from "next/navigation"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Spinner } from "@/components/ui/spinner"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import {
   Empty,
   EmptyContent,
@@ -32,19 +59,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   createDataset,
   fetchDatasets,
   fetchDocuments,
   fetchModelCatalog,
   generateDocumentDraft,
   uploadDocument,
+  retryDocumentIngestion,
   type DatasetSummary,
   type DocStatus,
   type DocumentSummary,
@@ -52,7 +73,7 @@ import {
 } from "@/components/rag/api"
 
 const POLL_INTERVAL_MS = 2500
-const ALLOWED_EXTENSIONS = ".pdf,.md,.markdown,.txt,.mdx,.csv,.json"
+const ALLOWED_EXTENSIONS = ".md,.markdown,.txt,.mdx,.csv,.json,.xlsx"
 
 /* -------------------------------------------------------------------------- */
 /*                                  Component                                  */
@@ -60,6 +81,7 @@ const ALLOWED_EXTENSIONS = ".pdf,.md,.markdown,.txt,.mdx,.csv,.json"
 
 export function DatasetsView() {
   const organization = useActiveOrganization()
+  const router = useRouter()
 
   const [datasets, setDatasets] = React.useState<DatasetSummary[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = React.useState(true)
@@ -69,7 +91,9 @@ export function DatasetsView() {
   const [generateOpen, setGenerateOpen] = React.useState(false)
   const [newDatasetOpen, setNewDatasetOpen] = React.useState(false)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [retryingId, setRetryingId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [newDatasetForAgent, setNewDatasetForAgent] = React.useState<DatasetSummary | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const active = datasets.find((d) => d.id === activeId) ?? null
@@ -86,7 +110,9 @@ export function DatasetsView() {
           : (list[0]?.id ?? null)
       )
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load datasets.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to load datasets."
+      )
     } finally {
       setIsLoadingDatasets(false)
     }
@@ -104,7 +130,9 @@ export function DatasetsView() {
     try {
       setDocuments(await fetchDocuments(organization.id, activeId))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load documents.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to load documents."
+      )
     }
   }, [organization, activeId])
 
@@ -134,6 +162,28 @@ export function DatasetsView() {
     }
   }
 
+  async function handleRetry(documentId: string) {
+    if (!organization || !activeId) return
+    setRetryingId(documentId)
+    setError(null)
+    try {
+      const updatedDoc = await retryDocumentIngestion(
+        organization.id,
+        activeId,
+        documentId
+      )
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === documentId ? updatedDoc : d))
+      )
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Failed to retry ingestion."
+      )
+    } finally {
+      setRetryingId(null)
+    }
+  }
+
   function handleUploadClick() {
     fileInputRef.current?.click()
   }
@@ -144,11 +194,7 @@ export function DatasetsView() {
     if (file) handleUpload(file)
   }
 
-  async function handleCreateDataset(
-    name: string,
-    description: string,
-    embedModel: string
-  ) {
+  async function handleCreateDataset(name: string, description: string, embedModel?: string) {
     if (!organization) return
     const created = await createDataset(organization.id, {
       name,
@@ -158,6 +204,7 @@ export function DatasetsView() {
     setDatasets((prev) => [created, ...prev])
     setActiveId(created.id)
     setNewDatasetOpen(false)
+    setNewDatasetForAgent(created)
   }
 
   const filteredDocs = documents.filter((doc) =>
@@ -173,7 +220,7 @@ export function DatasetsView() {
         {/* ------------------------------ Left rail ----------------------------- */}
         <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-64">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               <DatabaseIcon className="size-3.5" />
               Datasets
             </div>
@@ -192,7 +239,7 @@ export function DatasetsView() {
               Loading datasets…
             </p>
           ) : datasets.length === 0 ? (
-            <Empty className="border p-6 flex-none">
+            <Empty className="flex-none border p-6">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <DatabaseIcon />
@@ -332,7 +379,7 @@ export function DatasetsView() {
                     {active.status}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground text-pretty">
+                <p className="text-sm text-pretty text-muted-foreground">
                   {active.description || "No description."}
                 </p>
               </header>
@@ -387,11 +434,11 @@ export function DatasetsView() {
 
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
                   {/* Table header */}
-                  <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
+                  <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid">
                     <span>Source</span>
                     <span className="w-20 text-right">Chunks</span>
                     <span className="w-24 text-right">Tokens</span>
-                    <span className="w-24 text-right">Status</span>
+                    <span className="w-36 text-right">Status</span>
                   </div>
 
                   {filteredDocs.length === 0 ? (
@@ -472,7 +519,22 @@ export function DatasetsView() {
                             </span>
                             {doc.tokens.toLocaleString()}
                           </span>
-                          <span className="sm:w-24 sm:text-right">
+                          <span className="sm:w-36 sm:text-right flex items-center justify-end gap-2">
+                            {doc.status === "failed" && (
+                              <Button
+                                variant="outline"
+                                className="h-7 px-2 text-xs flex items-center gap-1.5"
+                                onClick={() => handleRetry(doc.id)}
+                                disabled={retryingId === doc.id}
+                              >
+                                {retryingId === doc.id ? (
+                                  <Loader2Icon className="size-3 animate-spin text-muted-foreground" />
+                                ) : (
+                                  <RotateCwIcon className="size-3 text-muted-foreground" />
+                                )}
+                                Retry
+                              </Button>
+                            )}
                             <StatusBadge status={doc.status} />
                           </span>
                         </li>
@@ -505,6 +567,44 @@ export function DatasetsView() {
           onCreate={handleCreateDataset}
         />
       )}
+
+      {newDatasetForAgent && (
+        <Dialog open={!!newDatasetForAgent} onOpenChange={(o) => !o && setNewDatasetForAgent(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <SparklesIcon className="size-4 animate-bounce" />
+                </span>
+                Recommend Agent Template
+              </DialogTitle>
+              <DialogDescription className="text-pretty mt-1.5">
+                We detected the new dataset <span className="font-semibold text-foreground">"{newDatasetForAgent.name}"</span>. 
+                Would you like to set up an AI agent using a recommended template optimized for this dataset?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex sm:justify-between gap-2 mt-2">
+              <Button
+                variant="ghost"
+                onClick={() => setNewDatasetForAgent(null)}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                Maybe later
+              </Button>
+              <Button
+                onClick={() => {
+                  router.push(`/agents?create=true&datasetId=${newDatasetForAgent.id}`)
+                  setNewDatasetForAgent(null)
+                }}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+              >
+                <BotIcon data-icon="inline-start" />
+                Create Agent
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
@@ -518,156 +618,178 @@ function NewDatasetDialog({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (
-    name: string,
-    description: string,
-    embedModel: string
-  ) => Promise<void>
+  onCreate: (name: string, description: string, embedModel?: string) => Promise<void>
 }) {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
-  const [embedModel, setEmbedModel] = React.useState("")
-  const [embeddingModels, setEmbeddingModels] = React.useState<
-    EmbeddingModelOption[]
-  >([])
   const [isSaving, setIsSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  // The embedding model can't be changed after creation without re-embedding
-  // every document, so it's chosen here and fixed for the dataset's lifetime.
+  const [embeddingModels, setEmbeddingModels] = React.useState<EmbeddingModelOption[]>([])
+  const [isLoadingModels, setIsLoadingModels] = React.useState(true)
+  const [selectedProvider, setSelectedProvider] = React.useState("")
+  const [embedModel, setEmbedModel] = React.useState("")
+
   React.useEffect(() => {
-    let active = true
-    fetchModelCatalog()
-      .then((catalog) => {
-        if (!active) return
+    async function load() {
+      try {
+        const catalog = await fetchModelCatalog()
         setEmbeddingModels(catalog.embeddingModels)
-        setEmbedModel((current) => current || catalog.embeddingModels[0]?.id || "")
-      })
-      .catch((err) => {
+        
+        const providers = Array.from(new Set(catalog.embeddingModels.map((m) => m.provider)))
+        const defaultProvider = providers[0] ?? ""
+        setSelectedProvider(defaultProvider)
+
+        const providerModels = catalog.embeddingModels.filter((m) => m.provider === defaultProvider)
+        setEmbedModel(providerModels[0]?.id ?? "")
+      } catch (err) {
         console.error("Failed to load embedding models:", err)
-      })
-    return () => {
-      active = false
+      } finally {
+        setIsLoadingModels(false)
+      }
     }
+    load()
   }, [])
 
-  const canCreate =
-    name.trim().length > 0 && embedModel.length > 0 && !isSaving
+  const providers = React.useMemo(() => {
+    return Array.from(new Set(embeddingModels.map((m) => m.provider)))
+  }, [embeddingModels])
+
+  const filteredModels = React.useMemo(() => {
+    return embeddingModels.filter((m) => m.provider === selectedProvider)
+  }, [embeddingModels, selectedProvider])
+
+  React.useEffect(() => {
+    if (filteredModels.length > 0) {
+      setEmbedModel((current) =>
+        filteredModels.some((m) => m.id === current)
+          ? current
+          : filteredModels[0].id
+      )
+    }
+  }, [filteredModels])
+
+  const canCreate = name.trim().length > 0 && !isSaving && !isLoadingModels
 
   async function handleCreate() {
     if (!canCreate) return
     setIsSaving(true)
     setError(null)
     try {
-      await onCreate(name.trim(), description.trim(), embedModel)
+      await onCreate(name.trim(), description.trim(), embedModel || undefined)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create dataset.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to create dataset."
+      )
       setIsSaving(false)
     }
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Create dataset"
-    >
-      <button
-        type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
-        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
-      />
-      <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <DatabaseIcon className="size-4" />
-          </span>
-          <h2 className="flex-1 text-sm font-semibold">New dataset</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <XIcon className="size-4" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <DatabaseIcon className="size-4" />
+            </span>
+            New dataset
+          </DialogTitle>
+          <DialogDescription>
+            Create a new dataset to organize your source documents.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex flex-col gap-4 px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="ds-name" className="text-xs font-medium text-muted-foreground">
-              Name
-            </label>
-            <input
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="ds-name">Name</FieldLabel>
+            <Input
               id="ds-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="support-kb"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+              placeholder="e.g. Product manuals"
+              autoFocus
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="ds-desc" className="text-xs font-medium text-muted-foreground">
-              Description
-            </label>
-            <textarea
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="ds-desc">Description</FieldLabel>
+            <Textarea
               id="ds-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="What this dataset is for (optional)"
-              className="resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/50"
+              placeholder="e.g. Manuals and spec sheets for our products"
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Embedding model
-            </label>
-            <Select value={embedModel} onValueChange={setEmbedModel}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select an embedding model" />
+          </Field>
+
+          {/* Provider Select */}
+          <Field>
+            <FieldLabel htmlFor="ds-provider">Provider</FieldLabel>
+            <Select
+              value={selectedProvider}
+              onValueChange={setSelectedProvider}
+              disabled={isLoadingModels || providers.length === 0}
+            >
+              <SelectTrigger id="ds-provider" className="w-full capitalize">
+                <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
-                {embeddingModels.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {providers.map((p) => (
+                    <SelectItem key={p} value={p} className="capitalize">
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Fixed for this dataset — documents are embedded with this model.
-            </p>
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
+          </Field>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
+          {/* Model Select */}
+          <Field>
+            <FieldLabel htmlFor="ds-model">Embedding Model</FieldLabel>
+            <Select
+              value={embedModel}
+              onValueChange={setEmbedModel}
+              disabled={isLoadingModels || filteredModels.length === 0}
+            >
+              <SelectTrigger id="ds-model" className="w-full">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {filteredModels.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label} ({m.id})
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+              <FieldDescription>
+              This is how the system reads your documents so it can search them
+              later. It cannot be changed after the dataset is created.
+            </FieldDescription>
+          </Field>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </FieldGroup>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={!canCreate}
-            className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          </Button>
+          <Button onClick={handleCreate} disabled={!canCreate}>
             {isSaving ? (
-              <Loader2Icon className="size-4 animate-spin" />
+              <Spinner />
             ) : (
-              <CheckCircle2Icon className="size-4" />
+              <CheckCircle2Icon data-icon="inline-start" />
             )}
             Create
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -722,7 +844,9 @@ function GenerateDocDialog({
       setContent(draft.content)
       setStep("preview")
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to generate document.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to generate document."
+      )
       setStep("input")
     }
   }
@@ -736,98 +860,72 @@ function GenerateDocDialog({
       const doc = await uploadDocument(organizationId, datasetId, file)
       onSaved(doc)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save document.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to save document."
+      )
       setIsSaving(false)
     }
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Generate document with AI"
-    >
-      <button
-        type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
-        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
-      />
-
-      <div className="relative flex max-h-[85svh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[85svh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <DialogHeader className="flex flex-row items-center gap-2 border-b border-border px-5 py-4">
+          <span className="flex size-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <WandSparklesIcon className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold">Generate with AI</h2>
-            <p className="truncate text-xs text-muted-foreground">
+            <DialogTitle className="text-sm font-semibold">
+              Generate with AI
+            </DialogTitle>
+            <DialogDescription className="truncate text-xs">
               Adds to{" "}
               <span className="font-mono text-foreground">{datasetName}</span>
-            </p>
+            </DialogDescription>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <XIcon className="size-4" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
           {step === "input" && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="gen-title"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Title
-                </label>
-                <input
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="gen-title">Title</FieldLabel>
+                <Input
                   id="gen-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Cold chain handling guide"
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+                  placeholder="e.g. How to set up your device"
+                  autoFocus
                 />
-              </div>
+              </Field>
 
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="gen-topic"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Topic
-                </label>
-                <textarea
+              <Field>
+                <FieldLabel htmlFor="gen-topic">Topic</FieldLabel>
+                <Textarea
                   id="gen-topic"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   rows={4}
-                  placeholder="Describe what this document should cover, e.g. temperature thresholds, packaging, and escalation steps for perishable shipments."
-                  className="resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/50"
+                  placeholder="Describe what this document should cover — e.g. what's in the box, setup steps, and common troubleshooting tips."
                 />
-                <p className="text-xs text-muted-foreground">
-                  The AI drafts the markdown for you — no need to write it by hand.
-                </p>
-              </div>
+                <FieldDescription>
+                  The AI writes the document for you — no need to write it by
+                  hand.
+                </FieldDescription>
+              </Field>
 
-              {error && <p className="text-xs text-destructive">{error}</p>}
-            </>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </FieldGroup>
           )}
 
           {step === "generating" && (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
-              <Loader2Icon className="size-7 animate-spin text-primary" />
+              <Spinner className="size-7 text-primary" />
               <p className="text-sm font-medium">Drafting your document…</p>
-              <p className="max-w-xs text-xs text-muted-foreground text-pretty">
-                Generating structured, chunk-friendly markdown from your topic.
+              <p className="max-w-xs text-xs text-pretty text-muted-foreground">
+                Turning your topic into a ready-to-use document.
               </p>
             </div>
           )}
@@ -835,69 +933,56 @@ function GenerateDocDialog({
           {step === "preview" && (
             <div className="flex min-h-0 flex-1 flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="gen-content"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Generated markdown · review &amp; edit
-                </label>
-                <button
-                  type="button"
+                <FieldLabel htmlFor="gen-content" className="text-xs">
+                  Generated document · review &amp; edit
+                </FieldLabel>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
                   onClick={() => setStep("input")}
-                  className="text-xs font-medium text-primary hover:underline"
                 >
                   Regenerate
-                </button>
+                </Button>
               </div>
-              <textarea
+              <Textarea
                 id="gen-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="min-h-64 flex-1 resize-none rounded-md border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed outline-none transition-colors focus:border-primary/50"
+                className="min-h-64 flex-1 resize-none font-mono text-xs leading-relaxed"
               />
-              {error && <p className="text-xs text-destructive">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
+        <DialogFooter className="flex flex-row items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
-          </button>
+          </Button>
 
           {step === "preview" ? (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
-                <Loader2Icon className="size-4 animate-spin" />
+                <Spinner />
               ) : (
-                <CheckCircle2Icon className="size-4" />
+                <CheckCircle2Icon data-icon="inline-start" />
               )}
               Save to dataset
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
+            <Button
               onClick={handleGenerate}
               disabled={!canGenerate || step === "generating"}
-              className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SparklesIcon className="size-4" />
+              <SparklesIcon data-icon="inline-start" />
               Generate
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -918,8 +1003,8 @@ function Stat({
     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
       <Icon className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0">
-        <p className="font-mono text-sm font-semibold leading-tight">{value}</p>
-        <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        <p className="font-mono text-sm leading-tight font-semibold">{value}</p>
+        <p className="truncate text-[11px] tracking-wide text-muted-foreground uppercase">
           {label}
         </p>
       </div>

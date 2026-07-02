@@ -102,6 +102,9 @@ export type RunResult = {
   faithfulness: number | null
   relevance: number | null
   model: string
+  // false when no chunk cleared the relevance floor — render a "no results"
+  // state instead of a normal answer.
+  grounded: boolean
 }
 
 // Context limits per model (in tokens)
