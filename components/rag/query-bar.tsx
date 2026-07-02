@@ -8,8 +8,6 @@ import {
   BarChart2Icon,
   ListChecksIcon,
   AlignLeftIcon,
-  PlusIcon,
-  PencilIcon,
   CheckIcon,
 } from "lucide-react"
 
@@ -17,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Dialog,
   DialogContent,
@@ -24,6 +23,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
@@ -50,9 +50,6 @@ import {
   PromptInputCommandSeparator,
   PromptInputFooter,
   PromptInputHeader,
-  PromptInputHoverCard,
-  PromptInputHoverCardContent,
-  PromptInputHoverCardTrigger,
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -73,8 +70,7 @@ export function QueryBar({
   agentId,
   setAgentId,
   suggestions,
-  onAddAgent,
-  onEditAgent,
+  isLoadingSuggestions,
   disabled,
 }: {
   query: string
@@ -85,12 +81,14 @@ export function QueryBar({
   agentId: string
   setAgentId: (id: string) => void
   suggestions: QuerySuggestion[]
+  isLoadingSuggestions?: boolean
   onAddAgent: () => void
-  onEditAgent: (agent: Agent) => void
   disabled?: boolean
 }) {
   const [previewAgentId, setPreviewAgentId] = React.useState(agentId)
   const [modelPickerOpen, setModelPickerOpen] = React.useState(false)
+  const [agentPickerOpen, setAgentPickerOpen] = React.useState(false)
+  const [suggestionsPickerOpen, setSuggestionsPickerOpen] = React.useState(false)
 
   const active = agents.find((a) => a.id === agentId) ?? agents[0] ?? {
     id: "loading",
@@ -117,6 +115,7 @@ export function QueryBar({
   const modelLabel = activeModel?.label ?? (genModel || "Select model")
   const modelDisabled =
     disabled || isLoadingModels || modelCatalog.chatModels.length === 0
+  const suggestionsDisabled = disabled || isLoadingSuggestions
   const suggestionsLabel =
     suggestions.length === 1
       ? "1 suggestion"
@@ -132,8 +131,8 @@ export function QueryBar({
     <div className="flex flex-col gap-3">
       <PromptInput onSubmit={handleSubmit}>
         <PromptInputHeader>
-          <PromptInputHoverCard>
-            <PromptInputHoverCardTrigger asChild>
+          <Dialog open={agentPickerOpen} onOpenChange={setAgentPickerOpen}>
+            <DialogTrigger asChild>
               <PromptInputButton
                 className="max-w-full"
                 size="sm"
@@ -143,35 +142,28 @@ export function QueryBar({
                 <AgentIcon id={active.id} />
                 <span className="truncate">{active.label}</span>
               </PromptInputButton>
-            </PromptInputHoverCardTrigger>
-            <PromptInputHoverCardContent className="w-[min(92vw,520px)] overflow-hidden p-0">
-              <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+            </DialogTrigger>
+            <DialogContent
+              className="sm:max-w-2xl p-0 gap-0"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Agents</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {previewAgent.description}
                   </p>
                 </div>
-                <PromptInputButton
-                  aria-label="Add Agent"
-                  onClick={onAddAgent}
-                  size="sm"
-                  variant="outline"
-                >
-                  <PlusIcon className="size-3.5" />
-                  <span>Add</span>
-                </PromptInputButton>
               </div>
 
-              <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div className="max-h-72 overflow-y-auto p-1">
+              <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+                <div className="max-h-96 overflow-y-auto p-1.5">
                   {agents.map((agent) => {
                     const isActive = agent.id === agentId
                     return (
                       <div
                         key={agent.id}
                         className={cn(
-                          "group flex items-center gap-1 rounded-2xl px-2 py-1.5 transition-colors hover:bg-muted/60",
+                          "flex items-center gap-1 rounded-2xl px-2 py-1.5 transition-colors hover:bg-muted/60",
                           isActive && "bg-muted text-foreground"
                         )}
                         onMouseEnter={() => setPreviewAgentId(agent.id)}
@@ -181,6 +173,7 @@ export function QueryBar({
                           onClick={() => {
                             setAgentId(agent.id)
                             setPreviewAgentId(agent.id)
+                            setAgentPickerOpen(false)
                           }}
                           className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                         >
@@ -197,50 +190,54 @@ export function QueryBar({
                             <CheckIcon className="size-3.5 text-primary" />
                           )}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => onEditAgent(agent)}
-                          aria-label={`Edit ${agent.label}`}
-                          className="flex size-7 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-70 transition-colors group-hover:opacity-100 hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
-                        >
-                          <PencilIcon className="size-3.5" />
-                        </button>
                       </div>
                     )
                   })}
                 </div>
 
-                <div className="border-t border-border bg-muted/30 p-3 md:border-t-0 md:border-l">
+                <div className="max-h-96 overflow-y-auto border-t border-border bg-muted/30 p-4 md:border-t-0 md:border-l">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     <AgentIcon id={previewAgent.id} />
                     {previewAgent.label}
                   </p>
-                  <p className="overflow-y-auto rounded-2xl bg-background/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                  <p className="rounded-2xl bg-background/70 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground">
                     {previewAgent.system}
                   </p>
                 </div>
               </div>
-            </PromptInputHoverCardContent>
-          </PromptInputHoverCard>
+            </DialogContent>
+          </Dialog>
 
-          <PromptInputHoverCard>
-            <PromptInputHoverCardTrigger asChild>
+          <Dialog
+            open={suggestionsPickerOpen}
+            onOpenChange={setSuggestionsPickerOpen}
+          >
+            <DialogTrigger asChild>
               <PromptInputButton
                 size="sm"
                 variant="outline"
-                disabled={disabled}
+                disabled={suggestionsDisabled}
               >
-                <SparklesIcon className="size-3.5" />
-                <span>{suggestionsLabel}</span>
+                {isLoadingSuggestions ? (
+                  <Spinner className="size-3.5" />
+                ) : (
+                  <SparklesIcon className="size-3.5" />
+                )}
+                <span>
+                  {isLoadingSuggestions ? "Loading…" : suggestionsLabel}
+                </span>
               </PromptInputButton>
-            </PromptInputHoverCardTrigger>
-            <PromptInputHoverCardContent className="w-[min(92vw,440px)] overflow-hidden p-0">
+            </DialogTrigger>
+            <DialogContent
+              showCloseButton={false}
+              className="w-[min(92vw,560px)] max-w-[min(92vw,560px)] overflow-hidden p-0"
+            >
               <PromptInputCommand>
                 <PromptInputCommandInput
                   className="border-none focus-visible:ring-0"
                   placeholder="Find a suggestion..."
                 />
-                <PromptInputCommandList>
+                <PromptInputCommandList className="max-h-96">
                   <PromptInputCommandEmpty className="p-3 text-sm text-muted-foreground">
                     No suggestion found.
                   </PromptInputCommandEmpty>
@@ -251,7 +248,10 @@ export function QueryBar({
                       <PromptInputCommandItem
                         key={suggestion.id}
                         value={suggestion.query}
-                        onSelect={() => setQuery(suggestion.query)}
+                        onSelect={() => {
+                          setQuery(suggestion.query)
+                          setSuggestionsPickerOpen(false)
+                        }}
                       >
                         <SparklesIcon className="text-primary" />
                         <span className="min-w-0 flex-1">
@@ -271,8 +271,8 @@ export function QueryBar({
                   </p>
                 </PromptInputCommandList>
               </PromptInputCommand>
-            </PromptInputHoverCardContent>
-          </PromptInputHoverCard>
+            </DialogContent>
+          </Dialog>
         </PromptInputHeader>
 
         <PromptInputBody>
@@ -306,7 +306,7 @@ export function QueryBar({
           <PromptInputSubmit
             status={isRunning ? "submitted" : "ready"}
             disabled={disabled || !query.trim() || isRunning}
-            className="!h-8"
+            className="h-8!"
           />
         </PromptInputFooter>
       </PromptInput>

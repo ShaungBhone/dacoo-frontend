@@ -14,7 +14,9 @@ import {
 import { cn } from "@/lib/utils"
 import { type Agent, type QuerySuggestion } from "@/components/rag/data"
 import { Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning"
+import { Shimmer } from "@/components/ai-elements/shimmer"
 import { CollapsibleContent } from "@/components/ui/collapsible"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   QueryBar,
   AgentDialog,
@@ -48,6 +50,7 @@ import {
 export function DashboardConsole() {
   const [query, setQuery] = React.useState("")
   const [isRunning, setIsRunning] = React.useState(false)
+  const [reasoningComplete, setReasoningComplete] = React.useState(false)
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [runBudget, setRunBudget] = React.useState<ContextBudget | null>(null)
   const [streamedText, setStreamedText] = React.useState("")
@@ -79,30 +82,42 @@ export function DashboardConsole() {
   const activeDataset = datasets.find((d) => d.id === datasetId) ?? null
 
   const [suggestions, setSuggestions] = React.useState<QuerySuggestion[]>([])
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = React.useState(false)
 
   React.useEffect(() => {
     if (!organization || !datasetId || !activeAgent) {
       setSuggestions([])
+      setIsLoadingSuggestions(false)
       return
     }
 
-    let cancelled = false
+    const controller = new AbortController()
+    setIsLoadingSuggestions(true)
 
-    fetchSuggestions(organization.id, datasetId, {
-      systemPrompt: activeAgent.system,
-      agentLabel: activeAgent.label,
-      lastQuery: result?.query,
-    })
-      .then((next) => {
-        if (!cancelled) setSuggestions(next)
-      })
+    fetchSuggestions(
+      organization.id,
+      datasetId,
+      {
+        systemPrompt: activeAgent.system,
+        agentLabel: activeAgent.label,
+        lastQuery: result?.query,
+      },
+      controller.signal
+    )
+      .then((next) => setSuggestions(next))
       .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") return
         console.error("Failed to load query suggestions:", error)
-        if (!cancelled) setSuggestions([])
+        setSuggestions([])
       })
+      .finally(() => setIsLoadingSuggestions(false))
 
+    // Aborts the in-flight request (not just the state update) so a rapid
+    // dependency change — e.g. React StrictMode's dev double-invoke, or the
+    // org/dataset/agent settling in quick succession on initial load —
+    // doesn't leave duplicate requests running against the backend.
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [organization, datasetId, activeAgent, result?.query])
 
@@ -140,6 +155,7 @@ export function DashboardConsole() {
       stopStreamRef.current?.()
       setQuery(nextQuery)
       setIsRunning(true)
+      setReasoningComplete(false)
       setIsStreaming(false)
       setStreamedText("")
       setRunResult(null)
@@ -246,7 +262,7 @@ export function DashboardConsole() {
         </p>
       </header>
 
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto mt-4">
         {hasNoDatasets ? (
           <Empty className="border p-6">
             <EmptyHeader>
@@ -266,7 +282,12 @@ export function DashboardConsole() {
                 {error}
               </p>
             )}
-            {isRunning && <SimulatedReasoning />}
+            {isRunning && (
+              <SimulatedReasoning
+                onComplete={() => setReasoningComplete(true)}
+              />
+            )}
+            {isRunning && reasoningComplete && <AnswerSkeleton />}
             {result && !result.grounded ? (
               <Empty className="border p-6">
                 <EmptyHeader>
@@ -306,8 +327,8 @@ export function DashboardConsole() {
           agentId={agentId}
           setAgentId={setAgentId}
           suggestions={suggestions}
+          isLoadingSuggestions={isLoadingSuggestions}
           onAddAgent={() => setAgentDialog({ mode: "add" })}
-          onEditAgent={(agent) => setAgentDialog({ mode: "edit", agent })}
           disabled={hasNoDatasets}
         />
       </div>
@@ -342,23 +363,35 @@ const REASONING_STEPS: { icon: LucideIcon; text: string }[] = [
   },
 ]
 
-function SimulatedReasoning() {
+function SimulatedReasoning({ onComplete }: { onComplete?: () => void }) {
   const [visibleCount, setVisibleCount] = React.useState(1)
   const [isStreaming, setIsStreaming] = React.useState(true)
 
   React.useEffect(() => {
+    // Tracked outside React state: setState updater functions run during
+    // React's own render/reconciliation pass, so triggering a *different*
+    // component's setState (onComplete) from inside one throws "Cannot
+    // update a component while rendering a different component." The
+    // interval callback itself runs as a normal async task, so calling
+    // setIsStreaming/onComplete directly here (not inside an updater) is
+    // safe.
+    let count = 1
     const interval = setInterval(() => {
-      setVisibleCount((prev) => {
-        const next = Math.min(prev + 1, REASONING_STEPS.length)
-        if (next >= REASONING_STEPS.length) {
-          clearInterval(interval)
-          setIsStreaming(false)
-        }
-        return next
-      })
+      count = Math.min(count + 1, REASONING_STEPS.length)
+      setVisibleCount(count)
+
+      if (count >= REASONING_STEPS.length) {
+        clearInterval(interval)
+        setIsStreaming(false)
+        onComplete?.()
+      }
     }, 450)
 
     return () => clearInterval(interval)
+    // onComplete intentionally excluded: this animation always runs its
+    // fixed sequence exactly once per mount, so it must not restart if the
+    // caller passes a new onComplete closure on re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -381,5 +414,34 @@ function SimulatedReasoning() {
         ))}
       </CollapsibleContent>
     </Reasoning>
+  )
+}
+
+function AnswerSkeleton() {
+  return (
+    <div className="mt-4 flex animate-in flex-col gap-4 fade-in-0">
+      <Shimmer as="p" className="text-sm font-medium" duration={1.4}>
+        Generating answer…
+      </Shimmer>
+
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-6 w-28 rounded-full" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-11/12" />
+        <Skeleton className="h-4 w-4/5" />
+      </div>
+
+      <div className="flex flex-col gap-2 pt-2">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-4 w-10/12" />
+        <Skeleton className="h-4 w-9/12" />
+        <Skeleton className="h-4 w-7/12" />
+      </div>
+    </div>
   )
 }

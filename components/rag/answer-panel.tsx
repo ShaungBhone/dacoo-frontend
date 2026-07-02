@@ -122,7 +122,7 @@ export function AnswerPanel({
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-border bg-background pt-1 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-1">
           {(["answer", "prompt"] as const).map((t) => (
             <button
@@ -223,7 +223,7 @@ export function AnswerPanel({
 
           <div
             className={cn(
-              "grid grid-cols-2 gap-3 border-t border-border pt-4 transition-opacity duration-500 md:grid-cols-4",
+              "grid grid-cols-2 gap-3 border-t border-border pt-2 transition-opacity duration-500 md:grid-cols-4",
               isStreaming ? "opacity-0" : "opacity-100"
             )}
           >

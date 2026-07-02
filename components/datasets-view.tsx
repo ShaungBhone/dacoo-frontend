@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { EMBEDDING_DESCRIPTIONS } from "@/components/rag/config-rail"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -759,8 +760,18 @@ function NewDatasetDialog({
               <SelectContent>
                 <SelectGroup>
                   {filteredModels.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.label} ({m.id})
+                    <SelectItem key={m.id} value={m.id} className="py-2.5">
+                      <div className="flex flex-col gap-0.5 text-left">
+                        <span className="font-heading font-medium text-sm text-foreground">
+                          {m.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground leading-normal max-w-sm font-normal">
+                          {EMBEDDING_DESCRIPTIONS[m.id] || "A semantic vector representation model used to index and query dataset documents."}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/80 font-mono mt-1">
+                          {m.dimensions} dimensions • {m.provider}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectGroup>

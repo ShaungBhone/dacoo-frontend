@@ -139,7 +139,8 @@ export async function runDatasetQuery(
 export async function fetchSuggestions(
   organizationId: number,
   datasetId: string,
-  input: { systemPrompt: string; agentLabel?: string; lastQuery?: string | null }
+  input: { systemPrompt: string; agentLabel?: string; lastQuery?: string | null },
+  signal?: AbortSignal
 ): Promise<QuerySuggestion[]> {
   const res = await apiFetch<{ suggestions: QuerySuggestion[] }>(
     `/api/v1/organizations/${organizationId}/datasets/${datasetId}/suggestions`,
@@ -150,6 +151,7 @@ export async function fetchSuggestions(
         agent_label: input.agentLabel,
         last_query: input.lastQuery || undefined,
       },
+      signal,
     }
   )
   return res.suggestions

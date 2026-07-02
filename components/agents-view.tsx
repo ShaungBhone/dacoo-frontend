@@ -43,6 +43,24 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
@@ -423,7 +441,7 @@ function AgentFormDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="data-[side=right]:sm:max-w-lg"
+        className="data-[side=right]:sm:max-w-xl"
         onPointerDownOutside={(e) => {
           // Prevent accidental overlay clicks from dismissing form if dirty
           if (name.trim() || system.trim()) {
@@ -452,54 +470,47 @@ function AgentFormDialog({
         </SheetHeader>
 
         {/* Scrollable body containing recommendation section and form fields */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 flex flex-col gap-5">
           {mode === "create" && datasets.length > 0 && showRecommendation && !isUsingTemplate && (
-            <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 via-violet-500/5 to-background p-4 shadow-sm transition-all duration-300">
-              <div className="absolute -right-8 -top-8 size-24 rounded-full bg-primary/10 blur-xl pointer-events-none" />
-              <div className="flex gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <SparklesIcon className="size-4 animate-pulse" />
-                </span>
-                <div className="flex-1 space-y-1">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    Recommended Agent Template
-                  </h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    We detected that you have datasets available. Would you like to use an agent template tailored to your data?
-                  </p>
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setShowRecommendation(false)
-                        setIsUsingTemplate(true)
-                        applyTemplate(selectedDatasetId || datasets[0]?.id, selectedTemplateId)
-                      }}
-                      className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                    >
-                      Yes, recommend template
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowRecommendation(false)}
-                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      No, start from scratch
-                    </Button>
-                  </div>
+            <Alert>
+              <SparklesIcon className="size-4 text-primary animate-pulse" />
+              <AlertTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5 ml-2">
+                Recommended Agent Template
+              </AlertTitle>
+              <AlertDescription className="text-xs text-muted-foreground leading-relaxed mt-1.5 ml-2">
+                We detected that you have datasets available. Would you like to use an agent template tailored to your data?
+                <div className="flex gap-2 pt-2.5">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setShowRecommendation(false)
+                      setIsUsingTemplate(true)
+                      applyTemplate(selectedDatasetId || datasets[0]?.id, selectedTemplateId)
+                    }}
+                    className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                  >
+                    Yes, recommend template
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRecommendation(false)}
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    No, start from scratch
+                  </Button>
                 </div>
-              </div>
-            </div>
+              </AlertDescription>
+            </Alert>
           )}
 
           {mode === "create" && datasets.length > 0 && isUsingTemplate && (
-            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3.5">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Card size="sm" className="bg-muted/30">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <WandSparklesIcon className="size-3.5 text-primary" />
                   Template Generator
-                </h4>
+                </CardTitle>
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -513,56 +524,60 @@ function AgentFormDialog({
                 >
                   Cancel template
                 </Button>
-              </div>
+              </CardHeader>
 
-              <div className="grid grid-cols-2 gap-3">
+              <CardContent className="grid grid-cols-2 gap-3 pb-4">
                 {/* Dataset Select */}
-                <div className="space-y-1">
-                  <label htmlFor="template-dataset" className="text-xs font-medium text-muted-foreground">
+                <Field className="space-y-1">
+                  <FieldLabel htmlFor="template-dataset" className="text-xs font-medium text-muted-foreground">
                     Dataset
-                  </label>
-                  <select
-                    id="template-dataset"
+                  </FieldLabel>
+                  <Select
                     value={selectedDatasetId}
-                    onChange={(e) => {
-                      const val = e.target.value
+                    onValueChange={(val) => {
                       setSelectedDatasetId(val)
                       applyTemplate(val, selectedTemplateId)
                     }}
-                    className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    {datasets.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <SelectTrigger id="template-dataset" size="sm" className="w-full">
+                      <SelectValue placeholder="Select dataset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {datasets.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
 
                 {/* Template Select */}
-                <div className="space-y-1">
-                  <label htmlFor="template-type" className="text-xs font-medium text-muted-foreground">
+                <Field className="space-y-1">
+                  <FieldLabel htmlFor="template-type" className="text-xs font-medium text-muted-foreground">
                     Template Style
-                  </label>
-                  <select
-                    id="template-type"
+                  </FieldLabel>
+                  <Select
                     value={selectedTemplateId}
-                    onChange={(e) => {
-                      const val = e.target.value
+                    onValueChange={(val) => {
                       setSelectedTemplateId(val)
                       applyTemplate(selectedDatasetId, val)
                     }}
-                    className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    {AGENTS.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+                    <SelectTrigger id="template-type" size="sm" className="w-full">
+                      <SelectValue placeholder="Select style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGENTS.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </CardContent>
+            </Card>
           )}
 
           <FieldGroup>
