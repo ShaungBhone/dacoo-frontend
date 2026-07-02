@@ -757,14 +757,20 @@ function NewDatasetDialog({
               <SelectTrigger id="ds-model" className="w-full">
                 <SelectValue placeholder="Select model" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" align="start" sideOffset={4}>
                 <SelectGroup>
                   {filteredModels.map((m) => (
-                    <SelectItem key={m.id} value={m.id} className="py-2.5">
-                      <div className="flex flex-col gap-0.5 text-left">
+                    <SelectItem
+                      key={m.id}
+                      value={m.id}
+                      text={
                         <span className="font-heading font-medium text-sm text-foreground">
                           {m.label}
                         </span>
+                      }
+                      className="py-2.5"
+                    >
+                      <div className="flex flex-col gap-0.5 text-left">
                         <span className="text-xs text-muted-foreground leading-normal max-w-sm font-normal">
                           {EMBEDDING_DESCRIPTIONS[m.id] || "A semantic vector representation model used to index and query dataset documents."}
                         </span>

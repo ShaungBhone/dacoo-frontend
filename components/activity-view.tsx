@@ -122,7 +122,7 @@ const FILTERS: { key: "all" | LogStatus; label: string }[] = [
 /*                                  Component                                  */
 /* -------------------------------------------------------------------------- */
 
-export function LogsView() {
+export function ActivityView() {
   const [filter, setFilter] = React.useState<"all" | LogStatus>("all")
   const [query, setQuery] = React.useState("")
   const [expanded, setExpanded] = React.useState<string | null>(null)
@@ -146,7 +146,7 @@ export function LogsView() {
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
         {/* Header */}
         <header className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight">Query logs</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Activity</h1>
           <p className="text-sm text-muted-foreground text-pretty">
             Every retrieval request with latency, token usage, and faithfulness.
             Select a row to inspect the trace.

@@ -21,7 +21,7 @@ import {
   BookOpenIcon,
   DatabaseIcon,
   FlaskConicalIcon,
-  ScrollTextIcon,
+  ActivityIcon,
   BotIcon,
 } from "lucide-react"
 
@@ -53,9 +53,8 @@ const data = {
     { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
     { title: "Agents", url: "/agents", icon: <BotIcon /> },
     { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
-    { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
-    { title: "Logs", url: "/logs", icon: <ScrollTextIcon /> },
-    { title: "Docs", url: "/docs", icon: <BookOpenIcon /> },
+    // { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
+    { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
   ],
 }
 
