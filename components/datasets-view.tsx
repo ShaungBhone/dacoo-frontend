@@ -774,9 +774,6 @@ function NewDatasetDialog({
                         <span className="text-xs text-muted-foreground leading-normal max-w-sm font-normal">
                           {EMBEDDING_DESCRIPTIONS[m.id] || "A semantic vector representation model used to index and query dataset documents."}
                         </span>
-                        <span className="text-[10px] text-muted-foreground/80 font-mono mt-1">
-                          {m.dimensions} dimensions • {m.provider}
-                        </span>
                       </div>
                     </SelectItem>
                   ))}

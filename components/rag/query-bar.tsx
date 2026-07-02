@@ -71,6 +71,7 @@ export function QueryBar({
   setAgentId,
   suggestions,
   isLoadingSuggestions,
+  onOpenSuggestions,
   disabled,
 }: {
   query: string
@@ -82,6 +83,7 @@ export function QueryBar({
   setAgentId: (id: string) => void
   suggestions: QuerySuggestion[]
   isLoadingSuggestions?: boolean
+  onOpenSuggestions?: () => void
   onAddAgent: () => void
   disabled?: boolean
 }) {
@@ -89,6 +91,7 @@ export function QueryBar({
   const [modelPickerOpen, setModelPickerOpen] = React.useState(false)
   const [agentPickerOpen, setAgentPickerOpen] = React.useState(false)
   const [suggestionsPickerOpen, setSuggestionsPickerOpen] = React.useState(false)
+  const [suggestionsOpened, setSuggestionsOpened] = React.useState(false)
 
   const active = agents.find((a) => a.id === agentId) ?? agents[0] ?? {
     id: "loading",
@@ -117,9 +120,13 @@ export function QueryBar({
     disabled || isLoadingModels || modelCatalog.chatModels.length === 0
   const suggestionsDisabled = disabled || isLoadingSuggestions
   const suggestionsLabel =
-    suggestions.length === 1
-      ? "1 suggestion"
-      : `${suggestions.length} suggestions`
+    suggestions.length === 0
+      ? suggestionsOpened
+        ? "No suggestions"
+        : "Suggestions"
+      : suggestions.length === 1
+        ? "1 suggestion"
+        : `${suggestions.length} suggestions`
 
   function handleSubmit(message: PromptInputMessage) {
     const nextQuery = message.text.trim()
@@ -210,7 +217,13 @@ export function QueryBar({
 
           <Dialog
             open={suggestionsPickerOpen}
-            onOpenChange={setSuggestionsPickerOpen}
+            onOpenChange={(open) => {
+              setSuggestionsPickerOpen(open)
+              if (open) {
+                setSuggestionsOpened(true)
+                onOpenSuggestions?.()
+              }
+            }}
           >
             <DialogTrigger asChild>
               <PromptInputButton

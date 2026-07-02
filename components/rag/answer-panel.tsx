@@ -324,7 +324,7 @@ function AnswerTrace({
           label="Rank evidence"
           description={
             topChunk
-              ? `Top source: ${topChunk.source}, ${topChunk.path}, page ${topChunk.page}.`
+              ? `Top source: ${topChunk.source}${topChunk.path ? `, ${topChunk.path}` : ""}${topChunk.page != null ? `, page ${topChunk.page}` : ""}.`
               : "No evidence was available to rank."
           }
           status="complete"

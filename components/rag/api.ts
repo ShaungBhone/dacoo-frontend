@@ -221,3 +221,38 @@ export async function deleteAgent(
     { method: "DELETE" }
   )
 }
+
+export type ActivityStatus = "success" | "warning" | "error"
+
+export type ActivityLogEntry = {
+  id: string
+  time: string
+  query: string
+  dataset: string
+  model: string
+  status: ActivityStatus
+  latencyMs: number
+  tokens: number
+  chunks: number
+  faithfulness: number | null
+  note?: string
+}
+
+export type ActivityLogPage = {
+  data: ActivityLogEntry[]
+  meta: { current_page: number; last_page: number; per_page: number; total: number }
+}
+
+export async function fetchActivityLogs(
+  organizationId: number,
+  params?: { status?: ActivityStatus; datasetId?: string; search?: string }
+): Promise<ActivityLogPage> {
+  const query = new URLSearchParams()
+  if (params?.status) query.set("status", params.status)
+  if (params?.datasetId) query.set("dataset_id", params.datasetId)
+  if (params?.search) query.set("search", params.search)
+  const qs = query.toString()
+  return apiFetch<ActivityLogPage>(
+    `/api/v1/organizations/${organizationId}/query-logs${qs ? `?${qs}` : ""}`
+  )
+}

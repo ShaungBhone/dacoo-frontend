@@ -13,103 +13,14 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-
-/* -------------------------------------------------------------------------- */
-/*                                  Demo data                                  */
-/* -------------------------------------------------------------------------- */
-
-type LogStatus = "success" | "warning" | "error"
-
-type LogEntry = {
-  id: string
-  time: string
-  query: string
-  dataset: string
-  model: string
-  status: LogStatus
-  latencyMs: number
-  tokens: number
-  chunks: number
-  faithfulness: number | null
-  note?: string
-}
-
-const LOGS: LogEntry[] = [
-  {
-    id: "req_9f2a",
-    time: "14:32:09",
-    query: "What is the safe internal temperature for storing fresh poultry?",
-    dataset: "support-kb",
-    model: "gpt-4o",
-    status: "success",
-    latencyMs: 1284,
-    tokens: 2505,
-    chunks: 4,
-    faithfulness: 0.94,
-  },
-  {
-    id: "req_9f2b",
-    time: "14:31:55",
-    query: "How are KYC checks handled when onboarding a new merchant?",
-    dataset: "support-kb",
-    model: "gpt-4o",
-    status: "success",
-    latencyMs: 1102,
-    tokens: 2210,
-    chunks: 5,
-    faithfulness: 0.91,
-  },
-  {
-    id: "req_9f2c",
-    time: "14:30:41",
-    query: "Which fees apply to cross-border card settlements?",
-    dataset: "support-kb",
-    model: "gpt-4o-mini",
-    status: "warning",
-    latencyMs: 1890,
-    tokens: 3120,
-    chunks: 8,
-    faithfulness: 0.62,
-    note: "Low faithfulness — answer may contain unsupported claims.",
-  },
-  {
-    id: "req_9f2d",
-    time: "14:29:12",
-    query: "Standard SLA for last-mile delivery exceptions?",
-    dataset: "support-kb",
-    model: "gpt-4o",
-    status: "success",
-    latencyMs: 940,
-    tokens: 1980,
-    chunks: 4,
-    faithfulness: 0.88,
-  },
-  {
-    id: "req_9f2e",
-    time: "14:27:03",
-    query: "Summarize the webhook retry policy for failed payments.",
-    dataset: "product-docs",
-    model: "gpt-4o",
-    status: "error",
-    latencyMs: 0,
-    tokens: 0,
-    chunks: 0,
-    faithfulness: null,
-    note: "Retrieval failed — index for product-docs is incomplete.",
-  },
-  {
-    id: "req_9f2f",
-    time: "14:25:48",
-    query: "What objection-handling scripts exist for pricing pushback?",
-    dataset: "sales-transcripts",
-    model: "gpt-4o",
-    status: "success",
-    latencyMs: 1320,
-    tokens: 2740,
-    chunks: 6,
-    faithfulness: 0.9,
-  },
-]
+import { ApiError } from "@/lib/api"
+import { useActiveOrganization } from "@/hooks/use-active-organization"
+import { Spinner } from "@/components/ui/spinner"
+import {
+  fetchActivityLogs,
+  type ActivityLogEntry as LogEntry,
+  type ActivityStatus as LogStatus,
+} from "@/components/rag/api"
 
 const FILTERS: { key: "all" | LogStatus; label: string }[] = [
   { key: "all", label: "All" },
@@ -123,11 +34,39 @@ const FILTERS: { key: "all" | LogStatus; label: string }[] = [
 /* -------------------------------------------------------------------------- */
 
 export function ActivityView() {
+  const organization = useActiveOrganization()
+
+  const [logs, setLogs] = React.useState<LogEntry[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [filter, setFilter] = React.useState<"all" | LogStatus>("all")
   const [query, setQuery] = React.useState("")
   const [expanded, setExpanded] = React.useState<string | null>(null)
 
-  const filtered = LOGS.filter((log) => {
+  const loadLogs = React.useCallback(async () => {
+    if (!organization) {
+      setIsLoading(false)
+      return
+    }
+    setIsLoading(true)
+    try {
+      const page = await fetchActivityLogs(organization.id)
+      setLogs(page.data)
+      setError(null)
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Failed to load activity."
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [organization])
+
+  React.useEffect(() => {
+    loadLogs()
+  }, [loadLogs])
+
+  const filtered = logs.filter((log) => {
     const matchesFilter = filter === "all" || log.status === filter
     const matchesQuery = log.query
       .toLowerCase()
@@ -136,9 +75,9 @@ export function ActivityView() {
   })
 
   const counts = {
-    success: LOGS.filter((l) => l.status === "success").length,
-    warning: LOGS.filter((l) => l.status === "warning").length,
-    error: LOGS.filter((l) => l.status === "error").length,
+    success: logs.filter((l) => l.status === "success").length,
+    warning: logs.filter((l) => l.status === "warning").length,
+    error: logs.filter((l) => l.status === "error").length,
   }
 
   return (
@@ -201,7 +140,15 @@ export function ActivityView() {
 
         {/* Log list */}
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          {filtered.length === 0 ? (
+          {error ? (
+            <p className="px-4 py-10 text-center text-sm text-destructive">
+              {error}
+            </p>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Spinner />
+            </div>
+          ) : filtered.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">
               No log entries match your filters.
             </p>
@@ -227,7 +174,7 @@ export function ActivityView() {
                       />
                       <StatusDot status={log.status} />
                       <span className="hidden shrink-0 font-mono text-xs text-muted-foreground sm:inline">
-                        {log.time}
+                        {formatLogTime(log.time)}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                         {log.query}
@@ -298,6 +245,11 @@ export function ActivityView() {
                             label="Request ID"
                             value={log.id}
                           />
+                          <Detail
+                            icon={ClockIcon}
+                            label="Time"
+                            value={new Date(log.time).toLocaleString()}
+                          />
                         </div>
                       </div>
                     )}
@@ -315,6 +267,10 @@ export function ActivityView() {
 /* -------------------------------------------------------------------------- */
 /*                                Small parts                                  */
 /* -------------------------------------------------------------------------- */
+
+function formatLogTime(time: string): string {
+  return new Date(time).toLocaleTimeString()
+}
 
 function Summary({
   label,
