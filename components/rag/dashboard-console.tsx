@@ -100,7 +100,6 @@ export function DashboardConsole() {
       {
         systemPrompt: activeAgent.system,
         agentLabel: activeAgent.label,
-        lastQuery: result?.query,
       },
       controller.signal
     )
@@ -119,7 +118,9 @@ export function DashboardConsole() {
     return () => {
       controller.abort()
     }
-  }, [organization, datasetId, activeAgent, result?.query])
+    // Deliberately excludes result?.query: suggestions are generated once
+    // per agent/dataset selection, not regenerated after every answer.
+  }, [organization, datasetId, activeAgent])
 
   async function upsertAgent(input: Omit<Agent, "id"> & { id?: string; status?: string }) {
     if (!organization) return

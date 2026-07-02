@@ -30,7 +30,7 @@ export default function RootLayout({
         inter.variable
       )}
     >
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <TooltipProvider>{children}</TooltipProvider>
