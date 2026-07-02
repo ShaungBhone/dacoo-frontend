@@ -11,12 +11,30 @@ import {
   CircleCheckIcon,
   ClockIcon,
   CircleAlertIcon,
-  XIcon,
   PlusIcon,
   ArrowUpRightIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 /* -------------------------------------------------------------------------- */
 /*                                  Mock data                                  */
@@ -28,7 +46,7 @@ const CREDIT_USED = CREDIT_TOTAL - CREDIT_BALANCE
 
 type ModelUsage = {
   model: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<any>
   creditsUsed: number
   requests: number
   color: string
@@ -164,13 +182,13 @@ export function BillingView() {
         </header>
 
         {/* ── Credit balance card ─────────────────────────────────────────  */}
-        <section className="rounded-xl border border-border bg-card">
-          <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-start sm:justify-between">
+        <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+          <CardContent className="flex flex-col gap-6 p-5 sm:flex-row sm:items-start sm:justify-between">
             {/* Left: balance */}
             <div className="flex flex-col gap-4 min-w-0">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                  <CoinsIcon className="size-4 text-primary" />
+                  <CoinsIcon className="size-4 text-primary" aria-hidden="true" />
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
                   Organization Credits
@@ -178,10 +196,10 @@ export function BillingView() {
               </div>
 
               <div className="flex items-end gap-3">
-                <span className="font-mono text-4xl font-bold tracking-tight text-foreground">
+                <span className="font-mono text-4xl font-bold tracking-tight text-foreground tabular-nums">
                   {CREDIT_BALANCE.toLocaleString()}
                 </span>
-                <span className="mb-1 text-sm text-muted-foreground">
+                <span className="mb-1 text-sm text-muted-foreground tabular-nums">
                   / {CREDIT_TOTAL.toLocaleString()} total
                 </span>
               </div>
@@ -194,15 +212,15 @@ export function BillingView() {
                     style={{ width: `${usedPct}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">
-                    <span className="font-mono font-medium text-foreground">
+                    <span className="font-mono font-medium text-foreground tabular-nums">
                       {CREDIT_USED.toLocaleString()}
                     </span>{" "}
                     credits used ({usedPct}%)
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    <span className="font-mono font-medium text-foreground">
+                    <span className="font-mono font-medium text-foreground tabular-nums">
                       {CREDIT_BALANCE.toLocaleString()}
                     </span>{" "}
                     remaining
@@ -213,19 +231,18 @@ export function BillingView() {
 
             {/* Right: actions */}
             <div className="flex flex-col gap-2 sm:items-end">
-              <button
+              <Button
                 type="button"
                 onClick={() => setTopUpOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                <PlusIcon className="size-4" />
+                <PlusIcon data-icon="inline-start" aria-hidden="true" />
                 Purchase Credits
-              </button>
+              </Button>
               <p className="text-xs text-muted-foreground">
                 Credits never expire
               </p>
             </div>
-          </div>
+          </CardContent>
 
           {/* Divider + summary strip */}
           <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
@@ -242,7 +259,7 @@ export function BillingView() {
               value={`${usedPct}%`}
             />
           </div>
-        </section>
+        </Card>
 
         {/* ── Per-model breakdown ─────────────────────────────────────────── */}
         <section className="flex flex-col gap-3">
@@ -273,61 +290,55 @@ export function BillingView() {
           </div>
 
           <div className="overflow-hidden rounded-xl border border-border bg-card">
-            {/* Table header */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center border-b border-border bg-muted/30 px-4 py-2.5 text-[11px] uppercase tracking-wide text-muted-foreground gap-4">
-              <span>Invoice</span>
-              <span className="hidden sm:block">Period</span>
-              <span className="hidden md:block text-right">Credits</span>
-              <span className="text-right">Amount</span>
-              <span className="text-center">Status</span>
-            </div>
-
-            {/* Table rows */}
-            <ul>
-              {INVOICES.map((inv) => (
-                <li
-                  key={inv.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center border-b border-border px-4 py-3.5 last:border-b-0 gap-4 hover:bg-muted/20 transition-colors"
-                >
-                  {/* Invoice number + date */}
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="font-mono text-sm font-medium text-foreground">
-                      {inv.number}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Issued {inv.date}
-                    </span>
-                  </div>
-
-                  {/* Period */}
-                  <span className="hidden sm:block shrink-0 text-sm text-muted-foreground">
-                    {inv.period}
-                  </span>
-
-                  {/* Credits purchased */}
-                  <span className="hidden md:block shrink-0 text-right font-mono text-sm text-foreground">
-                    {inv.creditsPurchased.toLocaleString()}
-                  </span>
-
-                  {/* Amount */}
-                  <span className="shrink-0 text-right font-mono text-sm font-medium text-foreground">
-                    ${inv.amount.toFixed(2)}
-                  </span>
-
-                  {/* Status + download */}
-                  <div className="flex shrink-0 items-center gap-2 justify-end">
-                    <StatusBadge status={inv.status} />
-                    <button
-                      type="button"
-                      title="Download PDF"
-                      className="flex items-center justify-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <DownloadIcon className="size-3.5" />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 py-2.5 text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Invoice</TableHead>
+                  <TableHead className="hidden sm:table-cell px-4 py-2.5 text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Period</TableHead>
+                  <TableHead className="hidden md:table-cell px-4 py-2.5 text-right text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Credits</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Amount</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {INVOICES.map((inv) => (
+                  <TableRow key={inv.id} className="hover:bg-muted/20">
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="font-mono text-sm font-medium text-foreground tabular-nums">
+                          {inv.number}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Issued {inv.date}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-sm text-muted-foreground">
+                      {inv.period}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell px-4 py-3 text-right font-mono text-sm text-foreground tabular-nums">
+                      {inv.creditsPurchased.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right font-mono text-sm font-medium text-foreground tabular-nums">
+                      ${inv.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-2 justify-end">
+                        <StatusBadge status={inv.status} />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label="Download PDF"
+                        >
+                          <DownloadIcon aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </section>
       </div>
@@ -355,7 +366,7 @@ function StatCell({ label, value }: { label: string; value: string }) {
       <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <span className="font-mono text-sm font-semibold text-foreground">
+      <span className="font-mono text-sm font-semibold text-foreground tabular-nums">
         {value}
       </span>
     </div>
@@ -371,66 +382,68 @@ function ModelCard({
 }) {
   const Icon = usage.icon
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-1.5">
-            <Icon className="size-3.5 text-muted-foreground" />
-            <span className="font-mono text-xs text-muted-foreground">
-              {usage.model}
+    <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <Icon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="font-mono text-xs text-muted-foreground">
+                {usage.model}
+              </span>
+            </div>
+            <span className="font-mono text-xl font-bold tracking-tight text-foreground tabular-nums">
+              {usage.creditsUsed.toLocaleString()}
             </span>
+            <span className="text-xs text-muted-foreground">credits used</span>
           </div>
-          <span className="font-mono text-xl font-bold tracking-tight text-foreground">
-            {usage.creditsUsed.toLocaleString()}
-          </span>
-          <span className="text-xs text-muted-foreground">credits used</span>
+          <Badge variant="secondary" className="font-mono shadow-none">
+            {pct}%
+          </Badge>
         </div>
-        <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground">
-          {pct}%
-        </span>
-      </div>
 
-      {/* Mini progress bar */}
-      <div className="flex flex-col gap-1">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={cn("h-full rounded-full transition-all", usage.color)}
-            style={{ width: `${pct}%` }}
-          />
+        {/* Mini progress bar */}
+        <div className="flex flex-col gap-1">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn("h-full rounded-full transition-all", usage.color)}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            <span className="font-mono font-medium text-foreground tabular-nums">
+              {usage.requests.toLocaleString()}
+            </span>{" "}
+            requests
+          </span>
         </div>
-        <span className="text-xs text-muted-foreground">
-          <span className="font-mono font-medium text-foreground">
-            {usage.requests.toLocaleString()}
-          </span>{" "}
-          requests
-        </span>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
   if (status === "paid") {
     return (
-      <span className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-        <CircleCheckIcon className="size-3" />
+      <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-transparent shadow-none">
+        <CircleCheckIcon data-icon="inline-start" aria-hidden="true" />
         Paid
-      </span>
+      </Badge>
     )
   }
   if (status === "pending") {
     return (
-      <span className="flex items-center gap-1 rounded-md bg-chart-1/20 px-2 py-0.5 text-xs font-medium text-chart-4">
-        <ClockIcon className="size-3" />
+      <Badge className="bg-chart-1/20 text-chart-4 hover:bg-chart-1/20 border-transparent shadow-none">
+        <ClockIcon data-icon="inline-start" aria-hidden="true" />
         Pending
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
-      <CircleAlertIcon className="size-3" />
+    <Badge variant="destructive" className="shadow-none">
+      <CircleAlertIcon data-icon="inline-start" aria-hidden="true" />
       Overdue
-    </span>
+    </Badge>
   )
 }
 
@@ -448,91 +461,85 @@ function TopUpDialog({
   const opt = options[selected]
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-md gap-0 p-0">
         {/* Dialog header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold text-foreground">
-              Purchase Credits
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Credits are added immediately to your organization.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <XIcon className="size-4" />
-          </button>
-        </div>
+        <DialogHeader className="border-b border-border px-5 py-4">
+          <DialogTitle>Purchase Credits</DialogTitle>
+          <DialogDescription>
+            Credits are added immediately to your organization.
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Credit tier picker */}
         <div className="flex flex-col gap-2 p-5">
           <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
             Select a package
           </p>
-          {options.map((o, i) => (
-            <button
-              key={o.credits}
-              type="button"
-              onClick={() => onSelect(i)}
-              className={cn(
-                "flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors",
-                selected === i
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-background hover:bg-muted/40"
-              )}
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-sm font-semibold text-foreground">
-                  {o.credits.toLocaleString()} credits
+          <ToggleGroup
+            type="single"
+            value={String(selected)}
+            onValueChange={(val) => {
+              if (val !== "") onSelect(Number(val))
+            }}
+            orientation="vertical"
+            spacing={2}
+            className="w-full flex-col items-stretch gap-2"
+          >
+            {options.map((o, i) => (
+              <ToggleGroupItem
+                key={o.credits}
+                value={String(i)}
+                className={cn(
+                  "flex h-auto items-center justify-between rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:bg-muted/40 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground",
+                  "w-full text-left"
+                )}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-sm font-semibold text-foreground tabular-nums">
+                    {o.credits.toLocaleString()} credits
+                  </span>
+                  <span className="text-xs text-muted-foreground font-normal tabular-nums">
+                    ~${(o.amount / o.credits * 1000).toFixed(2)} per 1k credits
+                  </span>
+                </div>
+                <span className="font-mono text-base font-bold text-foreground tabular-nums">
+                  ${o.amount}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  ~${(o.amount / o.credits * 1000).toFixed(2)} per 1k credits
-                </span>
-              </div>
-              <span className="font-mono text-base font-bold text-foreground">
-                ${o.amount}
-              </span>
-            </button>
-          ))}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
 
         {/* Summary + CTA */}
         <div className="flex flex-col gap-3 border-t border-border px-5 py-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">You&apos;ll receive</span>
-            <span className="font-mono font-semibold text-foreground">
+            <span className="font-mono font-semibold text-foreground tabular-nums">
               {opt.credits.toLocaleString()} credits
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total charge</span>
-            <span className="font-mono font-semibold text-foreground">
+            <span className="font-mono font-semibold text-foreground tabular-nums">
               ${opt.amount}.00
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            size="lg"
             onClick={onClose}
-            className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="mt-1 w-full"
           >
-            <ArrowUpRightIcon className="size-4" />
+            <ArrowUpRightIcon data-icon="inline-start" aria-hidden="true" />
             Confirm Purchase
-          </button>
+          </Button>
           <p className="text-center text-xs text-muted-foreground">
             Billed to card on file &middot; Credits never expire
           </p>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
+
