@@ -17,6 +17,7 @@ const LABELS: Record<string, string> = {
   "/datasets": "Datasets",
   // "/experiments": "Experiments",
   "/activity": "Activity",
+  "/billing": "Billing",
 }
 
 export function PageBreadcrumb() {
