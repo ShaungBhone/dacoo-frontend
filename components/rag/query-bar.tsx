@@ -251,37 +251,46 @@ export function QueryBar({
                   placeholder="Find a suggestion..."
                 />
                 <PromptInputCommandList className="max-h-96">
-                  <PromptInputCommandEmpty className="p-3 text-sm text-muted-foreground">
-                    No suggestion found.
-                  </PromptInputCommandEmpty>
-                  <PromptInputCommandGroup
-                    heading={`${active.label} suggestions`}
-                  >
-                    {suggestions.map((suggestion) => (
-                      <PromptInputCommandItem
-                        key={suggestion.id}
-                        value={suggestion.query}
-                        onSelect={() => {
-                          setQuery(suggestion.query)
-                          setSuggestionsPickerOpen(false)
-                        }}
+                  {isLoadingSuggestions ? (
+                    <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                      <Spinner className="size-4" />
+                      Loading suggestions…
+                    </div>
+                  ) : (
+                    <>
+                      <PromptInputCommandEmpty className="p-3 text-sm text-muted-foreground">
+                        No suggestion found.
+                      </PromptInputCommandEmpty>
+                      <PromptInputCommandGroup
+                        heading={`${active.label} suggestions`}
                       >
-                        <SparklesIcon className="text-primary" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">
-                            {suggestion.label}
-                          </span>
-                          <span className="line-clamp-2 text-xs text-muted-foreground">
-                            {suggestion.query}
-                          </span>
-                        </span>
-                      </PromptInputCommandItem>
-                    ))}
-                  </PromptInputCommandGroup>
-                  <PromptInputCommandSeparator />
-                  <p className="px-3 pt-1 pb-2 text-xs text-muted-foreground">
-                    Suggestions update with the selected agent and dataset.
-                  </p>
+                        {suggestions.map((suggestion) => (
+                          <PromptInputCommandItem
+                            key={suggestion.id}
+                            value={suggestion.query}
+                            onSelect={() => {
+                              setQuery(suggestion.query)
+                              setSuggestionsPickerOpen(false)
+                            }}
+                          >
+                            <SparklesIcon className="text-primary" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-medium">
+                                {suggestion.label}
+                              </span>
+                              <span className="line-clamp-2 text-xs text-muted-foreground">
+                                {suggestion.query}
+                              </span>
+                            </span>
+                          </PromptInputCommandItem>
+                        ))}
+                      </PromptInputCommandGroup>
+                      <PromptInputCommandSeparator />
+                      <p className="px-3 pt-1 pb-2 text-xs text-muted-foreground">
+                        Suggestions update with the selected agent and dataset.
+                      </p>
+                    </>
+                  )}
                 </PromptInputCommandList>
               </PromptInputCommand>
             </DialogContent>
@@ -293,7 +302,7 @@ export function QueryBar({
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
             placeholder="Ask a question against your indexed sources…"
-            className="min-h-20 pr-12"
+            className="min-h-10"
             disabled={disabled}
           />
         </PromptInputBody>

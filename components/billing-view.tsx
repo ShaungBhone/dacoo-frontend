@@ -13,12 +13,25 @@ import {
   CircleAlertIcon,
   PlusIcon,
   ArrowUpRightIcon,
+  LayersIcon,
+  RefreshCwIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { ApiError } from "@/lib/api"
+import { useActiveOrganization } from "@/hooks/use-active-organization"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import {
   Dialog,
   DialogContent,
@@ -35,6 +48,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { PlanPickerDialog } from "@/components/plan-picker-dialog"
+import { fetchSubscription, type Subscription } from "@/components/billing-api"
 
 /* -------------------------------------------------------------------------- */
 /*                                  Mock data                                  */
@@ -164,8 +179,34 @@ const TOP_UP_OPTIONS = [
 /* -------------------------------------------------------------------------- */
 
 export function BillingView() {
+  const organization = useActiveOrganization()
   const [topUpOpen, setTopUpOpen] = React.useState(false)
   const [selectedTopUp, setSelectedTopUp] = React.useState(2) // index
+
+  const [subscription, setSubscription] = React.useState<Subscription | null>(null)
+  const [isLoadingSubscription, setIsLoadingSubscription] = React.useState(true)
+  const [subscriptionError, setSubscriptionError] = React.useState<string | null>(null)
+  const [planPickerOpen, setPlanPickerOpen] = React.useState(false)
+
+  const loadSubscription = React.useCallback(async () => {
+    if (!organization) return
+    setIsLoadingSubscription(true)
+    setSubscriptionError(null)
+    try {
+      const sub = await fetchSubscription(organization.id)
+      setSubscription(sub)
+    } catch (err) {
+      setSubscriptionError(
+        err instanceof ApiError ? err.message : "Failed to load subscription."
+      )
+    } finally {
+      setIsLoadingSubscription(false)
+    }
+  }, [organization])
+
+  React.useEffect(() => {
+    loadSubscription()
+  }, [loadSubscription])
 
   const usedPct = Math.round((CREDIT_USED / CREDIT_TOTAL) * 100)
 
@@ -177,9 +218,18 @@ export function BillingView() {
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight">Billing</h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Manage your organization&apos;s AI credit balance, usage breakdown, and invoice history.
+            Manage your organization&apos;s plan, AI credit balance, usage breakdown, and invoice history.
           </p>
         </header>
+
+        {/* ── Current plan card ───────────────────────────────────────────  */}
+        <CurrentPlanCard
+          subscription={subscription}
+          isLoading={isLoadingSubscription}
+          error={subscriptionError}
+          onChangePlan={() => setPlanPickerOpen(true)}
+          onRetry={loadSubscription}
+        />
 
         {/* ── Credit balance card ─────────────────────────────────────────  */}
         <Card className="shadow-none border border-border ring-0 py-0 gap-0">
@@ -352,6 +402,16 @@ export function BillingView() {
           onClose={() => setTopUpOpen(false)}
         />
       )}
+
+      {/* ── Plan picker dialog ──────────────────────────────────────────── */}
+      {planPickerOpen && organization && subscription && (
+        <PlanPickerDialog
+          organizationId={organization.id}
+          currentPlanId={subscription.plan.id}
+          onClose={() => setPlanPickerOpen(false)}
+          onChanged={(updated) => setSubscription(updated)}
+        />
+      )}
     </div>
   )
 }
@@ -359,6 +419,164 @@ export function BillingView() {
 /* -------------------------------------------------------------------------- */
 /*                               Sub-components                                */
 /* -------------------------------------------------------------------------- */
+
+function formatPlanPrice(plan: Subscription["plan"]): string {
+  const amount = (plan.price / 100).toFixed(2)
+  const suffix = plan.interval === "monthly" ? "mo" : "yr"
+  return `$${amount}/${suffix}`
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "—"
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+function SubscriptionStatusBadge({ status }: { status: Subscription["status"] }) {
+  if (status === "active") {
+    return (
+      <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-transparent shadow-none">
+        Active
+      </Badge>
+    )
+  }
+  if (status === "trialing") {
+    return (
+      <Badge className="bg-chart-1/20 text-chart-4 hover:bg-chart-1/20 border-transparent shadow-none">
+        Trialing
+      </Badge>
+    )
+  }
+  if (status === "cancelled") {
+    return (
+      <Badge variant="destructive" className="shadow-none">
+        Cancelled
+      </Badge>
+    )
+  }
+  return (
+    <Badge variant="secondary" className="shadow-none">
+      Expired
+    </Badge>
+  )
+}
+
+function CurrentPlanCard({
+  subscription,
+  isLoading,
+  error,
+  onChangePlan,
+  onRetry,
+}: {
+  subscription: Subscription | null
+  isLoading: boolean
+  error: string | null
+  onChangePlan: () => void
+  onRetry: () => void
+}) {
+  if (isLoading && !subscription) {
+    return (
+      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+        <CardContent className="flex flex-col gap-3 p-5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error && !subscription) {
+    return (
+      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+        <CardContent className="p-0">
+          <Empty className="border-0 p-6">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <CircleAlertIcon />
+              </EmptyMedia>
+              <EmptyTitle>Couldn&apos;t load your plan</EmptyTitle>
+              <EmptyDescription>{error}</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                Retry
+              </Button>
+            </EmptyContent>
+          </Empty>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!subscription) {
+    return (
+      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+        <CardContent className="p-0">
+          <Empty className="border-0 p-6">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <LayersIcon />
+              </EmptyMedia>
+              <EmptyTitle>No plan found</EmptyTitle>
+              <EmptyDescription>
+                We couldn&apos;t find a subscription for this organization.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                Retry
+              </Button>
+            </EmptyContent>
+          </Empty>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const dateLine =
+    subscription.status === "trialing" && subscription.trial_ends_at
+      ? `Trial ends ${formatDate(subscription.trial_ends_at)}`
+      : subscription.status === "active"
+        ? `Active since ${formatDate(subscription.starts_at)}`
+        : subscription.status === "cancelled"
+          ? `Cancelled ${formatDate(subscription.cancelled_at)}`
+          : `Ended ${formatDate(subscription.ends_at)}`
+
+  return (
+    <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <LayersIcon className="size-4 text-primary" aria-hidden="true" />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">
+              Current Plan
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold tracking-tight text-foreground">
+              {subscription.plan.name}
+            </span>
+            <SubscriptionStatusBadge status={subscription.status} />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {formatPlanPrice(subscription.plan)} &middot; {dateLine}
+          </span>
+        </div>
+
+        <Button type="button" variant="outline" onClick={onChangePlan}>
+          <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
+          Change Plan
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (

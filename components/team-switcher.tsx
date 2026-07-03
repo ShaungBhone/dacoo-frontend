@@ -21,19 +21,21 @@ import { ChevronsUpDownIcon, PlusIcon } from "lucide-react"
 
 export function TeamSwitcher({
   teams,
+  activeTeamId,
+  onTeamChange,
 }: {
   teams: {
+    id: number
     name: string
     logo: React.ReactNode
     plan: string
   }[]
+  activeTeamId?: number | null
+  onTeamChange?: (id: number) => void
 }) {
   const { isMobile } = useSidebar()
-  const [activeTeamName, setActiveTeamName] = React.useState<string | undefined>(
-    teams[0]?.name
-  )
   const activeTeam =
-    teams.find((t) => t.name === activeTeamName) ?? teams[0]
+    teams.find((t) => t.id === activeTeamId) ?? teams[0]
 
   if (!activeTeam) {
     return null
@@ -69,8 +71,8 @@ export function TeamSwitcher({
             </DropdownMenuLabel>
             {teams.map((team, index) => (
               <DropdownMenuItem
-                key={team.name}
-                onClick={() => setActiveTeamName(team.name)}
+                key={team.id}
+                onClick={() => onTeamChange?.(team.id)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">

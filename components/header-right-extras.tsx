@@ -3,9 +3,14 @@
 import { usePathname } from "next/navigation"
 
 import { RightSidebarTrigger } from "@/components/right-sidebar"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 export function HeaderRightExtras() {
   const pathname = usePathname()
-  if (pathname !== "/dashboard") return null
-  return <RightSidebarTrigger className="ml-auto" />
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      <LanguageSwitcher />
+      {pathname === "/dashboard" && <RightSidebarTrigger />}
+    </div>
+  )
 }

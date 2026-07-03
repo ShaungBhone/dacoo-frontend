@@ -1,0 +1,191 @@
+"use client"
+
+import * as React from "react"
+import { ArrowUpRightIcon, CircleAlertIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { ApiError } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { fetchPlans, changePlan, type Plan, type Subscription } from "@/components/billing-api"
+
+function formatPrice(plan: Plan): string {
+  const amount = (plan.price / 100).toFixed(2)
+  const suffix = plan.interval === "monthly" ? "mo" : "yr"
+  return `$${amount}/${suffix}`
+}
+
+function summarizeLimits(plan: Plan): string {
+  const entries = Object.entries(plan.limits ?? {})
+  if (entries.length === 0) return `${plan.features.length} features included`
+  return entries
+    .slice(0, 3)
+    .map(([key, value]) => {
+      const label = key.replace(/_/g, " ")
+      return value < 0 ? `Unlimited ${label}` : `${value} ${label}`
+    })
+    .join(" · ")
+}
+
+export function PlanPickerDialog({
+  organizationId,
+  currentPlanId,
+  onClose,
+  onChanged,
+}: {
+  organizationId: number
+  currentPlanId: number
+  onClose: () => void
+  onChanged: (subscription: Subscription) => void
+}) {
+  const [plans, setPlans] = React.useState<Plan[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+  const [selectedPlanId, setSelectedPlanId] = React.useState<number>(currentPlanId)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+
+  const loadPlans = React.useCallback(async () => {
+    setIsLoadingPlans(true)
+    setLoadError(null)
+    try {
+      const list = await fetchPlans()
+      setPlans(list)
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.message : "Failed to load plans.")
+    } finally {
+      setIsLoadingPlans(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadPlans()
+  }, [loadPlans])
+
+  async function handleConfirm() {
+    if (selectedPlanId === currentPlanId) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const updated = await changePlan(organizationId, selectedPlanId)
+      onChanged(updated)
+      onClose()
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : "Failed to change plan.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId)
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-md gap-0 p-0">
+        <DialogHeader className="border-b border-border px-5 py-4">
+          <DialogTitle>Change Plan</DialogTitle>
+          <DialogDescription>
+            Switching plans applies immediately.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-2 p-5">
+          {isLoadingPlans ? (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <CircleAlertIcon className="size-6 text-destructive" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+              <Button type="button" variant="outline" size="sm" onClick={loadPlans}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <ToggleGroup
+              type="single"
+              value={String(selectedPlanId)}
+              onValueChange={(val) => {
+                if (val !== "") setSelectedPlanId(Number(val))
+              }}
+              orientation="vertical"
+              spacing={2}
+              className="w-full flex-col items-stretch gap-2"
+            >
+              {plans.map((plan) => (
+                <ToggleGroupItem
+                  key={plan.id}
+                  value={String(plan.id)}
+                  className={cn(
+                    "flex h-auto items-center justify-between rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:bg-muted/40 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground",
+                    "w-full text-left"
+                  )}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">
+                        {plan.name}
+                      </span>
+                      {plan.id === currentPlanId && (
+                        <Badge variant="secondary" className="shadow-none">
+                          Current plan
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {summarizeLimits(plan)}
+                    </span>
+                  </div>
+                  <span className="font-mono text-base font-bold text-foreground tabular-nums">
+                    {formatPrice(plan)}
+                  </span>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-border px-5 py-4">
+          {submitError && (
+            <p className="text-sm text-destructive">{submitError}</p>
+          )}
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleConfirm}
+            disabled={
+              isLoadingPlans ||
+              isSubmitting ||
+              selectedPlanId === currentPlanId
+            }
+            className="w-full"
+          >
+            {isSubmitting ? (
+              <Spinner className="size-4" />
+            ) : (
+              <ArrowUpRightIcon data-icon="inline-start" aria-hidden="true" />
+            )}
+            {selectedPlanId === currentPlanId
+              ? "Current Plan"
+              : selectedPlan
+                ? `Switch to ${selectedPlan.name}`
+                : "Confirm Plan Change"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

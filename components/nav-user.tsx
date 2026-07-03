@@ -17,6 +17,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
+import { useTranslation } from "@/contexts/language-context"
 import {
   ChevronsUpDownIcon,
   SparklesIcon,
@@ -37,6 +38,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
+  const { t } = useTranslation()
 
   return (
     <SidebarMenu>
@@ -80,28 +82,28 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <SparklesIcon />
-                Upgrade to Pro
+                {t("userDropdown.upgrade")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheckIcon />
-                Account
+                {t("userDropdown.account")}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCardIcon />
-                Billing
+                {t("common.billing")}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon />
-                Notifications
+                {t("userDropdown.notifications")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
               <LogOutIcon />
-              Log out
+              {t("common.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

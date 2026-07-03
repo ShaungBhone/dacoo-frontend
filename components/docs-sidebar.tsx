@@ -151,6 +151,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
     if (!user?.organizations || user.organizations.length === 0) {
       return [
         {
+          id: -1,
           name: "Personal Workspace",
           logo: <GalleryVerticalEndIcon />,
           plan: "Free",
@@ -161,6 +162,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
       const Logos = [GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon]
       const LogoIcon = Logos[index % Logos.length]
       return {
+        id: org.id,
         name: org.name,
         logo: <LogoIcon />,
         plan: org.owner_id === user.id ? "Owner" : "Member",

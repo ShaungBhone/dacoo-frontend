@@ -1,0 +1,36 @@
+export const en = {
+  common: {
+    platform: "Platform",
+    playground: "Playground",
+    agents: "Agents",
+    datasets: "Datasets",
+    activity: "Activity",
+    billing: "Billing",
+    logout: "Log out",
+    search: "Search...",
+    save: "Save",
+    cancel: "Cancel",
+    create: "Create",
+    edit: "Edit",
+    delete: "Delete",
+    loading: "Loading...",
+    settings: "Settings",
+  },
+  userDropdown: {
+    upgrade: "Upgrade to Pro",
+    account: "Account",
+    notifications: "Notifications",
+  },
+  sidebar: {
+    personalWorkspace: "Personal Workspace",
+    freePlan: "Free",
+  },
+  dashboard: {
+    consoleTitle: "Retrieval testing console",
+    consoleDesc: "Run a query, inspect the generated answer, and trace every claim back to its source chunk.",
+    noDatasetsTitle: "No datasets yet",
+    noDatasetsDesc: "Create one from the Datasets page before running a query.",
+    noRelevantInfoTitle: "No relevant information found",
+    noRelevantInfoDesc: "None of your indexed sources matched “{query}” closely enough to answer it. Try rephrasing the question, or check that the right dataset is selected and has documents indexed.",
+  },
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTranslation } from "@/contexts/language-context"
 
 import {
   Collapsible,
@@ -33,10 +34,11 @@ type NavItem = {
 
 export function NavMain({ items }: { items: NavItem[] }) {
   const pathname = usePathname()
+  const { t } = useTranslation()
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>{t("common.platform")}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const isActive = pathname === item.url || item.isActive

@@ -39,6 +39,7 @@ import {
   type ContextBudget,
   type RunResult,
 } from "@/components/rag/retrieval"
+import { useTranslation } from "@/contexts/language-context"
 import {
   Empty,
   EmptyDescription,
@@ -48,6 +49,7 @@ import {
 } from "@/components/ui/empty"
 
 export function DashboardConsole() {
+  const { t } = useTranslation()
   const [query, setQuery] = React.useState("")
   const [isRunning, setIsRunning] = React.useState(false)
   const [reasoningComplete, setReasoningComplete] = React.useState(false)
@@ -79,7 +81,6 @@ export function DashboardConsole() {
   }, [agents, agentId])
 
   const activeAgent = agents.find((a) => a.id === agentId) ?? agents[0]
-  const activeDataset = datasets.find((d) => d.id === datasetId) ?? null
 
   const [suggestions, setSuggestions] = React.useState<QuerySuggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = React.useState(false)
@@ -173,7 +174,7 @@ export function DashboardConsole() {
       if (!submittedQuery || isRunning || !organization || !datasetId) return
 
       stopStreamRef.current?.()
-      setQuery(nextQuery)
+      setQuery("")
       setIsRunning(true)
       setReasoningComplete(false)
       setIsStreaming(false)
@@ -274,24 +275,23 @@ export function DashboardConsole() {
     <div className="flex h-full flex-col gap-2">
       <header className="flex shrink-0 flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight text-pretty">
-          Retrieval testing console
+          {t("dashboard.consoleTitle")}
         </h1>
         <p className="text-sm text-pretty text-muted-foreground">
-          Run a query, inspect the generated answer, and trace every claim back
-          to its source chunk.
+          {t("dashboard.consoleDesc")}
         </p>
       </header>
 
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto mt-4">
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto mt-2">
         {hasNoDatasets ? (
           <Empty className="border p-6">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <DatabaseIcon />
               </EmptyMedia>
-              <EmptyTitle>No datasets yet</EmptyTitle>
+              <EmptyTitle>{t("dashboard.noDatasetsTitle")}</EmptyTitle>
               <EmptyDescription>
-                Create one from the Datasets page before running a query.
+                {t("dashboard.noDatasetsDesc")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -314,12 +314,9 @@ export function DashboardConsole() {
                   <EmptyMedia variant="icon">
                     <SearchXIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No relevant information found</EmptyTitle>
+                  <EmptyTitle>{t("dashboard.noRelevantInfoTitle")}</EmptyTitle>
                   <EmptyDescription>
-                    None of your indexed sources matched “{result.query}”
-                    closely enough to answer it. Try rephrasing the question, or
-                    check that the right dataset is selected and has documents
-                    indexed.
+                    {t("dashboard.noRelevantInfoDesc", { query: result.query })}
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

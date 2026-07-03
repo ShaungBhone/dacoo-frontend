@@ -6,6 +6,8 @@ import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import { useAuth } from "@/contexts/auth-context"
+import { useOrganization } from "@/contexts/organization-context"
+import { useTranslation } from "@/contexts/language-context"
 import {
   Sidebar,
   SidebarContent,
@@ -62,15 +64,18 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useAuth()
+  const { activeOrganizationId, setActiveOrganizationId } = useOrganization()
+  const { t } = useTranslation()
 
   const teams = React.useMemo(() => {
     if (isLoading && !user) return []
     if (!user?.organizations || user.organizations.length === 0) {
       return [
         {
-          name: "Personal Workspace",
+          id: -1,
+          name: t("sidebar.personalWorkspace"),
           logo: <GalleryVerticalEndIcon />,
-          plan: "Free",
+          plan: t("sidebar.freePlan"),
         },
       ]
     }
@@ -78,12 +83,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       const Logos = [GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon]
       const LogoIcon = Logos[index % Logos.length]
       return {
+        id: org.id,
         name: org.name,
         logo: <LogoIcon />,
         plan: org.owner_id === user.id ? "Owner" : "Member",
       }
     })
-  }, [user, isLoading])
+  }, [user, isLoading, t])
 
   const sidebarUser = React.useMemo(() => {
     return {
@@ -93,13 +99,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [user])
 
+  const translatedNavMain = React.useMemo(() => {
+    return data.navMain.map((item) => ({
+      ...item,
+      title: t(`common.${item.title.toLowerCase()}`),
+    }))
+  }, [t])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={teams} />
+        <TeamSwitcher
+          teams={teams}
+          activeTeamId={activeOrganizationId}
+          onTeamChange={setActiveOrganizationId}
+        />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={translatedNavMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={sidebarUser} />
