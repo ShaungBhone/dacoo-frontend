@@ -12,7 +12,6 @@ import {
   LayersIcon,
   CoinsIcon,
   ClockIcon,
-  HashIcon,
   UploadIcon,
   SparklesIcon,
   WandSparklesIcon,
@@ -23,20 +22,11 @@ import {
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import { useRouter } from "next/navigation"
-import { EMBEDDING_DESCRIPTIONS } from "@/components/rag/config-rail"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -63,14 +53,12 @@ import {
   createDataset,
   fetchDatasets,
   fetchDocuments,
-  fetchModelCatalog,
   generateDocumentDraft,
   uploadDocument,
   retryDocumentIngestion,
   type DatasetSummary,
   type DocStatus,
   type DocumentSummary,
-  type EmbeddingModelOption,
 } from "@/components/rag/api"
 
 const POLL_INTERVAL_MS = 2500
@@ -195,12 +183,11 @@ export function DatasetsView() {
     if (file) handleUpload(file)
   }
 
-  async function handleCreateDataset(name: string, description: string, embedModel?: string) {
+  async function handleCreateDataset(name: string, description: string) {
     if (!organization) return
     const created = await createDataset(organization.id, {
       name,
       description: description || undefined,
-      embed_model: embedModel || undefined,
     })
     setDatasets((prev) => [created, ...prev])
     setActiveId(created.id)
@@ -409,15 +396,6 @@ export function DatasetsView() {
                 />
               </div>
 
-              {/* Embedding model line */}
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm">
-                <HashIcon className="size-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Embedding model</span>
-                <span className="ml-auto font-mono text-foreground">
-                  {active.embedModel || "default"}
-                </span>
-              </div>
-
               {/* Documents */}
               <section className="flex flex-col gap-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -619,65 +597,21 @@ function NewDatasetDialog({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (name: string, description: string, embedModel?: string) => Promise<void>
+  onCreate: (name: string, description: string) => Promise<void>
 }) {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [isSaving, setIsSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const [embeddingModels, setEmbeddingModels] = React.useState<EmbeddingModelOption[]>([])
-  const [isLoadingModels, setIsLoadingModels] = React.useState(true)
-  const [selectedProvider, setSelectedProvider] = React.useState("")
-  const [embedModel, setEmbedModel] = React.useState("")
-
-  React.useEffect(() => {
-    async function load() {
-      try {
-        const catalog = await fetchModelCatalog()
-        setEmbeddingModels(catalog.embeddingModels)
-        
-        const providers = Array.from(new Set(catalog.embeddingModels.map((m) => m.provider)))
-        const defaultProvider = providers[0] ?? ""
-        setSelectedProvider(defaultProvider)
-
-        const providerModels = catalog.embeddingModels.filter((m) => m.provider === defaultProvider)
-        setEmbedModel(providerModels[0]?.id ?? "")
-      } catch (err) {
-        console.error("Failed to load embedding models:", err)
-      } finally {
-        setIsLoadingModels(false)
-      }
-    }
-    load()
-  }, [])
-
-  const providers = React.useMemo(() => {
-    return Array.from(new Set(embeddingModels.map((m) => m.provider)))
-  }, [embeddingModels])
-
-  const filteredModels = React.useMemo(() => {
-    return embeddingModels.filter((m) => m.provider === selectedProvider)
-  }, [embeddingModels, selectedProvider])
-
-  React.useEffect(() => {
-    if (filteredModels.length > 0) {
-      setEmbedModel((current) =>
-        filteredModels.some((m) => m.id === current)
-          ? current
-          : filteredModels[0].id
-      )
-    }
-  }, [filteredModels])
-
-  const canCreate = name.trim().length > 0 && !isSaving && !isLoadingModels
+  const canCreate = name.trim().length > 0 && !isSaving
 
   async function handleCreate() {
     if (!canCreate) return
     setIsSaving(true)
     setError(null)
     try {
-      await onCreate(name.trim(), description.trim(), embedModel || undefined)
+      await onCreate(name.trim(), description.trim())
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Failed to create dataset."
@@ -721,69 +655,6 @@ function NewDatasetDialog({
               rows={3}
               placeholder="e.g. Manuals and spec sheets for our products"
             />
-          </Field>
-
-          {/* Provider Select */}
-          <Field>
-            <FieldLabel htmlFor="ds-provider">Provider</FieldLabel>
-            <Select
-              value={selectedProvider}
-              onValueChange={setSelectedProvider}
-              disabled={isLoadingModels || providers.length === 0}
-            >
-              <SelectTrigger id="ds-provider" className="w-full capitalize">
-                <SelectValue placeholder="Select provider" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {providers.map((p) => (
-                    <SelectItem key={p} value={p} className="capitalize">
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          {/* Model Select */}
-          <Field>
-            <FieldLabel htmlFor="ds-model">Embedding Model</FieldLabel>
-            <Select
-              value={embedModel}
-              onValueChange={setEmbedModel}
-              disabled={isLoadingModels || filteredModels.length === 0}
-            >
-              <SelectTrigger id="ds-model" className="w-full">
-                <SelectValue placeholder="Select model" />
-              </SelectTrigger>
-              <SelectContent position="popper" align="start" sideOffset={4}>
-                <SelectGroup>
-                  {filteredModels.map((m) => (
-                    <SelectItem
-                      key={m.id}
-                      value={m.id}
-                      text={
-                        <span className="font-heading font-medium text-sm text-foreground">
-                          {m.label}
-                        </span>
-                      }
-                      className="py-2.5"
-                    >
-                      <div className="flex flex-col gap-0.5 text-left">
-                        <span className="text-xs text-muted-foreground leading-normal max-w-sm font-normal">
-                          {EMBEDDING_DESCRIPTIONS[m.id] || "A semantic vector representation model used to index and query dataset documents."}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-              <FieldDescription>
-              This is how the system reads your documents so it can search them
-              later. It cannot be changed after the dataset is created.
-            </FieldDescription>
           </Field>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

@@ -107,19 +107,16 @@ export type RunResult = {
   grounded: boolean
 }
 
-// Context limits per model (in tokens)
+// Context limits per model (in tokens). Keys match the OpenRouter `vendor/model`
+// slugs served by the backend's `ai.chat_models` catalog.
 export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
-  "gpt-4o": 128_000,
-  "gpt-4o-mini": 128_000,
-  "gpt-4-turbo": 128_000,
-  "gpt-4": 8_192,
-  "gpt-3.5-turbo": 16_385,
-  "gpt-5": 256_000,
-  "claude-3-5-sonnet": 200_000,
-  "claude-3-haiku": 200_000,
-  "claude-3-opus": 200_000,
-  "gemini-1.5-pro": 1_048_576,
-  "gemini-1.5-flash": 1_048_576,
+  "openai/gpt-4o-mini": 128_000,
+  "openai/gpt-4o": 128_000,
+  "anthropic/claude-sonnet-4.5": 200_000,
+  "google/gemini-2.5-flash": 1_048_576,
+  "google/gemini-2.5-pro": 1_048_576,
+  "deepseek/deepseek-chat": 64_000,
+  "x-ai/grok-4": 256_000,
 }
 
 export const DEFAULT_CONTEXT_LIMIT = 128_000

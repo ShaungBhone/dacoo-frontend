@@ -45,13 +45,14 @@ export type ModelOption = {
   provider: string
 }
 
-export type EmbeddingModelOption = ModelOption & {
-  dimensions: number
+export type EmbeddingProviderOption = {
+  id: string
+  label: string
 }
 
 export type ModelCatalog = {
   chatModels: ModelOption[]
-  embeddingModels: EmbeddingModelOption[]
+  embeddingProviders: EmbeddingProviderOption[]
 }
 
 export async function fetchModelCatalog(): Promise<ModelCatalog> {
@@ -69,7 +70,7 @@ export async function fetchDatasets(
 
 export async function createDataset(
   organizationId: number,
-  input: { name: string; description?: string; embed_model?: string }
+  input: { name: string; description?: string; embed_provider?: string }
 ): Promise<DatasetSummary> {
   const res = await apiFetch<{ data: DatasetSummary }>(
     `/api/v1/organizations/${organizationId}/datasets`,

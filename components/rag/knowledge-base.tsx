@@ -42,7 +42,7 @@ export function KnowledgeBase() {
       </RailHeading>
 
       <Select
-        value={datasetId ?? undefined}
+        value={datasetId ?? ""}
         onValueChange={(val) => setDatasetId(val)}
         disabled={isLoadingDatasets || datasets.length === 0}
       >

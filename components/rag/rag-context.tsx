@@ -78,7 +78,7 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
 
   const [modelCatalog, setModelCatalog] = React.useState<ModelCatalog>({
     chatModels: [],
-    embeddingModels: [],
+    embeddingProviders: [],
   })
   const [isLoadingModels, setIsLoadingModels] = React.useState(true)
 
@@ -92,6 +92,23 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingDocuments, setIsLoadingDocuments] = React.useState(false)
   const [agents, setAgents] = React.useState<AgentSummary[]>([])
   const [isLoadingAgents, setIsLoadingAgents] = React.useState(true)
+
+  // Datasets/documents/agents/queries are all scoped to the active org, but
+  // fetches are async — without this, switching orgs leaves the previous
+  // org's datasetId (and agents/documents lists) in place until the refetch
+  // resolves, so a query fired in that window pairs the new org id with the
+  // old org's dataset id and the backend 403s. Clearing synchronously during
+  // render (not in an effect) closes that window entirely.
+  const [lastOrganizationId, setLastOrganizationId] = React.useState(
+    organization?.id ?? null
+  )
+  if ((organization?.id ?? null) !== lastOrganizationId) {
+    setLastOrganizationId(organization?.id ?? null)
+    setDatasetId(null)
+    setDatasets([])
+    setDocuments([])
+    setAgents([])
+  }
 
   // The embedding model is fixed per dataset (it must match how the dataset's
   // documents were embedded), so it is derived from the active dataset rather

@@ -115,7 +115,9 @@ export function QueryBar({
 
   const activeModel =
     modelCatalog.chatModels.find((m) => m.id === genModel) ?? null
-  const modelLabel = activeModel?.label ?? (genModel || "Select model")
+  const modelLabel = activeModel?.label
+    ? stripVendorPrefix(activeModel.label)
+    : (genModel || "Select model")
   const modelDisabled =
     disabled || isLoadingModels || modelCatalog.chatModels.length === 0
   const suggestionsDisabled = disabled || isLoadingSuggestions
@@ -342,6 +344,26 @@ export function QueryBar({
 /*                            Generation model picker                          */
 /* -------------------------------------------------------------------------- */
 
+const PROVIDER_NAMES: Record<string, string> = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+}
+
+function formatProviderName(provider: string): string {
+  const known = PROVIDER_NAMES[provider]
+  if (known) return known
+  return provider
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
+
+function stripVendorPrefix(label: string): string {
+  const idx = label.indexOf(": ")
+  return idx === -1 ? label : label.slice(idx + 2)
+}
+
 function ModelPicker({
   open,
   onOpenChange,
@@ -375,7 +397,10 @@ function ModelPicker({
         <ModelSelectorList>
           <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
           {providers.map((provider) => (
-            <ModelSelectorGroup key={provider} heading={provider}>
+            <ModelSelectorGroup
+              key={provider}
+              heading={formatProviderName(provider)}
+            >
               {modelCatalog.chatModels
                 .filter((m) => m.provider === provider)
                 .map((m) => (
@@ -383,12 +408,12 @@ function ModelPicker({
                     key={m.id}
                     value={m.id}
                     onSelect={() => handleSelect(m.id)}
+                    data-checked={m.id === genModel ? "true" : undefined}
                   >
                     <ModelSelectorLogo provider={m.provider.toLowerCase()} />
-                    <ModelSelectorName>{m.label}</ModelSelectorName>
-                    {m.id === genModel && (
-                      <CheckIcon className="ml-auto size-4" />
-                    )}
+                    <ModelSelectorName>
+                      {stripVendorPrefix(m.label)}
+                    </ModelSelectorName>
                   </ModelSelectorItem>
                 ))}
             </ModelSelectorGroup>
