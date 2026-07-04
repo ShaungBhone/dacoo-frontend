@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api"
+import { apiFetch, apiDownload } from "@/lib/api"
 
 export type PlanInterval = "monthly" | "yearly"
 
@@ -49,4 +49,105 @@ export async function changePlan(
     { method: "PATCH", body: { plan_id: planId } }
   )
   return res.data
+}
+
+export const CREDIT_CURRENCY = "CREDIT"
+
+export type Wallet = {
+  id: string
+  organization_id: number
+  currency_code: string
+  balance: string
+  formatted_balance: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type WalletTransaction = {
+  id: number
+  wallet_id: number
+  type: "debit" | "credit"
+  amount: string
+  balance_after: string
+  currency_exchange_id: string | null
+  description: string | null
+  model: string | null
+  created_at: string
+}
+
+export type ModelUsage = {
+  model: string
+  credits_used: number
+  requests: number
+}
+
+export async function fetchWallets(organizationId: number): Promise<Wallet[]> {
+  const res = await apiFetch<{ data: Wallet[] }>(
+    `/api/v1/organizations/${organizationId}/wallets`
+  )
+  return res.data
+}
+
+export async function fetchWalletTransactions(
+  organizationId: number,
+  walletId: string
+): Promise<WalletTransaction[]> {
+  const res = await apiFetch<{ data: WalletTransaction[] }>(
+    `/api/v1/organizations/${organizationId}/wallets/${walletId}/transactions`
+  )
+  return res.data
+}
+
+export async function fetchUsageByModel(
+  organizationId: number,
+  walletId: string,
+  period: "month" | "all" = "month"
+): Promise<ModelUsage[]> {
+  const res = await apiFetch<{ data: ModelUsage[] }>(
+    `/api/v1/organizations/${organizationId}/wallets/${walletId}/usage-by-model?period=${period}`
+  )
+  return res.data
+}
+
+export async function topUpCredits(
+  organizationId: number,
+  sourceCurrency: string,
+  amount: string
+): Promise<Wallet> {
+  const res = await apiFetch<{ data: Wallet }>(
+    `/api/v1/organizations/${organizationId}/wallets/topup`,
+    { method: "POST", body: { source_currency: sourceCurrency, amount } }
+  )
+  return res.data
+}
+
+export type InvoiceStatus = "draft" | "sent" | "paid" | "cancelled" | "unpaid"
+
+export type Invoice = {
+  id: number
+  number: string
+  subject: string
+  status: InvoiceStatus
+  is_overdue: boolean
+  issued_at: string
+  due_at: string
+  total: string
+  created_at: string
+}
+
+export async function fetchInvoices(organizationId: number): Promise<Invoice[]> {
+  const res = await apiFetch<{ data: Invoice[] }>(
+    `/api/v1/organizations/${organizationId}/invoices`
+  )
+  return res.data
+}
+
+export async function downloadInvoicePdf(
+  organizationId: number,
+  invoice: Invoice
+): Promise<void> {
+  await apiDownload(
+    `/api/v1/organizations/${organizationId}/invoices/${invoice.id}/pdf`,
+    `${invoice.number}.pdf`
+  )
 }

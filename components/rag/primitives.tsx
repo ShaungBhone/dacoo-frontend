@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { Slider as SliderControl } from "@/components/ui/slider"
 
 export function RailHeading({
   icon,
@@ -57,34 +57,14 @@ export function Slider({
           {display}
         </span>
       </div>
-      <input
-        type="range"
+      <SliderControl
+        value={[value]}
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+        onValueChange={([v]) => onChange(v)}
         aria-label={label}
       />
     </div>
-  )
-}
-
-export function Toggle({ on }: { on: boolean }) {
-  return (
-    <span
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-        on ? "bg-primary" : "bg-muted-foreground/30"
-      )}
-    >
-      <span
-        className={cn(
-          "inline-block size-4 translate-x-0.5 rounded-full bg-background transition-transform",
-          on && "translate-x-[18px]"
-        )}
-      />
-    </span>
   )
 }

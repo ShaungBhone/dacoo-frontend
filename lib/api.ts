@@ -83,6 +83,30 @@ export async function apiFetch<T>(
   return data as T
 }
 
+/**
+ * Fetch a binary response (e.g. a PDF) and trigger a browser download,
+ * since <a href> can't carry the Bearer auth header these endpoints require.
+ */
+export async function apiDownload(endpoint: string, filename: string): Promise<void> {
+  const token = getCookie("auth_token")
+  const headers = new Headers()
+  if (token) headers.set("Authorization", `Bearer ${token}`)
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, { headers })
+
+  if (!response.ok) {
+    throw new ApiError(friendlyStatusMessage(response.status), response.status)
+  }
+
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 function extractCleanMessage(data: unknown): string | undefined {
   if (!data || typeof data !== "object") return undefined
   const obj = data as Record<string, unknown>

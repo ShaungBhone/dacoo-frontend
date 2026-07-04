@@ -293,7 +293,7 @@ export function DatasetsView() {
             onChange={handleFileSelected}
           />
 
-          <button
+          {/* <button
             type="button"
             onClick={() => setGenerateOpen(true)}
             disabled={!active}
@@ -301,7 +301,8 @@ export function DatasetsView() {
           >
             <SparklesIcon className="size-4" />
             Generate with AI
-          </button>
+          </button> */}
+
 
           <button
             type="button"

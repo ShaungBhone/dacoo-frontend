@@ -30,7 +30,7 @@ export const en = {
     consoleDesc: "Run a query, inspect the generated answer, and trace every claim back to its source chunk.",
     noDatasetsTitle: "No datasets yet",
     noDatasetsDesc: "Create one from the Datasets page before running a query.",
-    noRelevantInfoTitle: "No relevant information found",
-    noRelevantInfoDesc: "None of your indexed sources matched “{query}” closely enough to answer it. Try rephrasing the question, or check that the right dataset is selected and has documents indexed.",
+    noRelevantInfoTitle: "We do not provide this service.",
+    noRelevantInfoDesc: "We couldn't find any relevant information matching “{query}” in our knowledge base.",
   },
 }

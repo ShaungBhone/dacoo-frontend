@@ -3,11 +3,10 @@
 import { SlidersHorizontalIcon, GaugeIcon, TriangleAlertIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import {
-  RailHeading,
-  Slider,
-  Toggle,
-} from "@/components/rag/primitives"
+import { RailHeading, Slider } from "@/components/rag/primitives"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Switch } from "@/components/ui/switch"
 import { useRag } from "@/components/rag/rag-context"
 
 export function ConfigRail() {
@@ -44,19 +43,21 @@ export function ConfigRail() {
         onChange={setTemperature}
       />
 
-      <button
-        type="button"
-        onClick={() => setRerank(!rerank)}
-        className="flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
-      >
-        <span className="flex flex-col">
-          <span className="text-sm font-medium">Cohere rerank</span>
+      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
+        <div className="flex flex-col">
+          <Label htmlFor="rerank-toggle" className="text-sm font-medium">
+            Cohere rerank
+          </Label>
           <span className="text-xs text-muted-foreground">
             Re-score retrieved chunks
           </span>
-        </span>
-        <Toggle on={rerank} />
-      </button>
+        </div>
+        <Switch
+          id="rerank-toggle"
+          checked={rerank}
+          onCheckedChange={setRerank}
+        />
+      </div>
 
       {/* Context budget meter */}
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 px-3 py-3">
@@ -74,26 +75,17 @@ export function ConfigRail() {
         </div>
 
         {/* Progress bar */}
-        <div
-          className="h-2 w-full overflow-hidden rounded-full bg-muted"
-          role="meter"
+        <Progress
+          value={Math.min(100, contextBudget.pct * 100)}
           aria-label="Context window usage"
-          aria-valuenow={contextBudget.usedTokens}
-          aria-valuemin={0}
-          aria-valuemax={contextBudget.limitTokens}
-        >
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-300",
-              contextBudget.isOver
-                ? "bg-destructive"
-                : contextBudget.pct > 0.8
-                  ? "bg-amber-500"
-                  : "bg-primary"
-            )}
-            style={{ width: `${Math.min(100, contextBudget.pct * 100).toFixed(1)}%` }}
-          />
-        </div>
+          indicatorClassName={cn(
+            contextBudget.isOver
+              ? "bg-destructive"
+              : contextBudget.pct > 0.8
+                ? "bg-amber-500"
+                : "bg-primary"
+          )}
+        />
 
         {/* Usage fraction */}
         <div className="flex items-baseline justify-between">
