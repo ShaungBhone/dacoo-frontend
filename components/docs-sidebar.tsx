@@ -142,7 +142,9 @@ const navMainData = [
   },
 ]
 
-export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function DocsSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   const { query, setQuery, activeSectionId } = useDocsSearch()
   const { user, isLoading } = useAuth()
 
@@ -200,7 +202,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
             <SidebarInput
               id="docs-sidebar-search"
               placeholder="Search guide..."
-              className="pl-8 h-8 text-xs bg-sidebar-background"
+              className="bg-sidebar-background h-8 pl-8 text-xs"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -216,7 +218,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                className="text-primary hover:bg-primary/5 hover:text-primary font-medium"
+                className="font-medium text-primary hover:bg-primary/5 hover:text-primary"
               >
                 <a href="/dashboard" className="flex items-center gap-2">
                   <ArrowLeftIcon className="size-4" />
@@ -238,7 +240,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                     isActive={isGroupActive}
                     className={
                       isGroupActive
-                        ? "bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary font-medium"
+                        ? "bg-primary/5 font-medium text-primary hover:bg-primary/10 hover:text-primary"
                         : "font-medium"
                     }
                   >
@@ -252,7 +254,9 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                             asChild
                             isActive={isGroupActive}
                             className={
-                              isGroupActive ? "text-primary/95 font-medium" : "text-muted-foreground"
+                              isGroupActive
+                                ? "font-medium text-primary/95"
+                                : "text-muted-foreground"
                             }
                           >
                             <a href={subItem.url}>{subItem.title}</a>
@@ -265,7 +269,7 @@ export function DocsSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
               )
             })}
             {filteredNav.length === 0 && (
-              <p className="px-3 py-2 text-xs text-muted-foreground text-center">
+              <p className="px-3 py-2 text-center text-xs text-muted-foreground">
                 No matching sections.
               </p>
             )}

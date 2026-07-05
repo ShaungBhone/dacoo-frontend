@@ -73,22 +73,18 @@ export function DocsView() {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-balance">
               Everything you need to test and ship RAG
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground text-pretty">
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-pretty text-muted-foreground">
               Learn how to run retrieval queries, manage knowledge bases,
-              compare configurations, and trace every answer back to its
-              source. Each section maps to a tab in the playground.
+              compare configurations, and trace every answer back to its source.
+              Each section maps to a tab in the playground.
             </p>
           </div>
 
-          <Doc
-            id="getting-started"
-            icon={RocketIcon}
-            title="Getting started"
-          >
+          <Doc id="getting-started" icon={RocketIcon} title="Getting started">
             <P>
-              The RAG Playground is a workspace for testing
-              retrieval-augmented generation against your own documents. A
-              typical first session looks like this:
+              The RAG Playground is a workspace for testing retrieval-augmented
+              generation against your own documents. A typical first session
+              looks like this:
             </P>
             <Steps
               items={[
@@ -100,8 +96,8 @@ export function DocsView() {
               ]}
             />
             <Callout>
-              Everything in the playground runs against the active project
-              shown in the top bar — switch projects from the
+              Everything in the playground runs against the active project shown
+              in the top bar — switch projects from the
               <Code>acme / support-kb</Code> selector.
             </Callout>
           </Doc>
@@ -125,16 +121,12 @@ export function DocsView() {
               dedicated model for sharper relevance ordering.
             </Term>
             <Term term="Faithfulness">
-              How well the generated answer is grounded in the retrieved
-              context — a key quality metric in Experiments.
+              How well the generated answer is grounded in the retrieved context
+              — a key quality metric in Experiments.
             </Term>
           </Doc>
 
-          <Doc
-            id="playground"
-            icon={TerminalSquareIcon}
-            title="Playground"
-          >
+          <Doc id="playground" icon={TerminalSquareIcon} title="Playground">
             <P>
               The Playground is the retrieval testing console. Type a question
               in the query bar and press <Code>Run</Code> (or
@@ -148,16 +140,16 @@ export function DocsView() {
             </P>
             <P>
               Generated answers include inline citation badges. Hover or focus
-              any badge to preview the exact source chunk — file name,
-              relevance score, page, and text — so you can trace each claim.
+              any badge to preview the exact source chunk — file name, relevance
+              score, page, and text — so you can trace each claim.
             </P>
           </Doc>
 
           <Doc id="datasets" icon={DatabaseIcon} title="Datasets">
             <P>
-              Datasets are collections of indexed documents. Select a dataset
-              on the left to view its stats: document count, total chunks,
-              tokens, and the embedding model used to index it.
+              Datasets are collections of indexed documents. Select a dataset on
+              the left to view its stats: document count, total chunks, tokens,
+              and the embedding model used to index it.
             </P>
             <P>
               The documents table shows the indexing status of each file.
@@ -167,11 +159,7 @@ export function DocsView() {
             </P>
           </Doc>
 
-          <Doc
-            id="experiments"
-            icon={FlaskConicalIcon}
-            title="Experiments"
-          >
+          <Doc id="experiments" icon={FlaskConicalIcon} title="Experiments">
             <P>
               Experiments is an evaluation leaderboard of saved runs. Each row
               captures a retrieval configuration and its quality metrics:
@@ -254,7 +242,7 @@ function Doc({
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="max-w-2xl text-sm leading-7 text-muted-foreground text-pretty">
+    <p className="max-w-2xl text-sm leading-7 text-pretty text-muted-foreground">
       {children}
     </p>
   )
@@ -276,7 +264,7 @@ function Steps({ items }: { items: string[] }) {
           <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary">
             {i + 1}
           </span>
-          <span className="text-sm leading-6 text-muted-foreground text-pretty">
+          <span className="text-sm leading-6 text-pretty text-muted-foreground">
             {item}
           </span>
         </li>
@@ -285,17 +273,11 @@ function Steps({ items }: { items: string[] }) {
   )
 }
 
-function Term({
-  term,
-  children,
-}: {
-  term: string
-  children: React.ReactNode
-}) {
+function Term({ term, children }: { term: string; children: React.ReactNode }) {
   return (
     <div className="max-w-2xl rounded-lg border border-border bg-card p-4">
       <p className="font-mono text-sm font-medium text-foreground">{term}</p>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground text-pretty">
+      <p className="mt-1 text-sm leading-6 text-pretty text-muted-foreground">
         {children}
       </p>
     </div>
@@ -304,7 +286,7 @@ function Term({
 
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="max-w-2xl rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-6 text-foreground text-pretty">
+    <div className="max-w-2xl rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-6 text-pretty text-foreground">
       {children}
     </div>
   )

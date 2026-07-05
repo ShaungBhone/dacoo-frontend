@@ -82,7 +82,8 @@ export function DatasetsView() {
   const [isUploading, setIsUploading] = React.useState(false)
   const [retryingId, setRetryingId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
-  const [newDatasetForAgent, setNewDatasetForAgent] = React.useState<DatasetSummary | null>(null)
+  const [newDatasetForAgent, setNewDatasetForAgent] =
+    React.useState<DatasetSummary | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const active = datasets.find((d) => d.id === activeId) ?? null
@@ -303,7 +304,6 @@ export function DatasetsView() {
             Generate with AI
           </button> */}
 
-
           <button
             type="button"
             onClick={handleUploadClick}
@@ -499,11 +499,11 @@ export function DatasetsView() {
                             </span>
                             {doc.tokens.toLocaleString()}
                           </span>
-                          <span className="sm:w-36 sm:text-right flex items-center justify-end gap-2">
+                          <span className="flex items-center justify-end gap-2 sm:w-36 sm:text-right">
                             {doc.status === "failed" && (
                               <Button
                                 variant="outline"
-                                className="h-7 px-2 text-xs flex items-center gap-1.5"
+                                className="flex h-7 items-center gap-1.5 px-2 text-xs"
                                 onClick={() => handleRetry(doc.id)}
                                 disabled={retryingId === doc.id}
                               >
@@ -549,7 +549,10 @@ export function DatasetsView() {
       )}
 
       {newDatasetForAgent && (
-        <Dialog open={!!newDatasetForAgent} onOpenChange={(o) => !o && setNewDatasetForAgent(null)}>
+        <Dialog
+          open={!!newDatasetForAgent}
+          onOpenChange={(o) => !o && setNewDatasetForAgent(null)}
+        >
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -558,25 +561,31 @@ export function DatasetsView() {
                 </span>
                 Recommend Agent Template
               </DialogTitle>
-              <DialogDescription className="text-pretty mt-1.5">
-                We detected the new dataset <span className="font-semibold text-foreground">"{newDatasetForAgent.name}"</span>. 
-                Would you like to set up an AI agent using a recommended template optimized for this dataset?
+              <DialogDescription className="mt-1.5 text-pretty">
+                We detected the new dataset{" "}
+                <span className="font-semibold text-foreground">
+                  "{newDatasetForAgent.name}"
+                </span>
+                . Would you like to set up an AI agent using a recommended
+                template optimized for this dataset?
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex sm:justify-between gap-2 mt-2">
+            <DialogFooter className="mt-2 flex gap-2 sm:justify-between">
               <Button
                 variant="ghost"
                 onClick={() => setNewDatasetForAgent(null)}
-                className="text-muted-foreground hover:text-foreground text-xs"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Maybe later
               </Button>
               <Button
                 onClick={() => {
-                  router.push(`/agents?create=true&datasetId=${newDatasetForAgent.id}`)
+                  router.push(
+                    `/agents?create=true&datasetId=${newDatasetForAgent.id}`
+                  )
                   setNewDatasetForAgent(null)
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                className="bg-primary text-xs text-primary-foreground hover:bg-primary/90"
               >
                 <BotIcon data-icon="inline-start" />
                 Create Agent

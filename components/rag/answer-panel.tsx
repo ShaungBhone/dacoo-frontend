@@ -234,10 +234,10 @@ export function AnswerPanel({
               >
                 <m.icon className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <p className="font-mono text-sm font-semibold leading-tight">
+                  <p className="font-mono text-sm leading-tight font-semibold">
                     {m.value}
                   </p>
-                  <p className="truncate text-[11px] uppercase text-muted-foreground">
+                  <p className="truncate text-[11px] text-muted-foreground uppercase">
                     {m.label}
                   </p>
                 </div>
@@ -249,12 +249,14 @@ export function AnswerPanel({
 
       {tab === "prompt" && (
         <div className="flex flex-col gap-3">
-          <p className="mb-3 text-xs text-muted-foreground text-pretty">
+          <p className="mb-3 text-xs text-pretty text-muted-foreground">
             The exact context window sent to the model: system prompt, retrieved
             chunks, and user query.
           </p>
 
-          {contextBudget && <ContextBudgetMeter contextBudget={contextBudget} />}
+          {contextBudget && (
+            <ContextBudgetMeter contextBudget={contextBudget} />
+          )}
 
           <CodeBlock
             code={result.promptPreview}
@@ -314,7 +316,9 @@ function AnswerTrace({
                 </ChainOfThoughtSearchResult>
               ))
             ) : (
-              <ChainOfThoughtSearchResult>No matching source</ChainOfThoughtSearchResult>
+              <ChainOfThoughtSearchResult>
+                No matching source
+              </ChainOfThoughtSearchResult>
             )}
           </ChainOfThoughtSearchResults>
         </ChainOfThoughtStep>
@@ -360,7 +364,7 @@ function AnswerTrace({
                     : "opacity-100"
                 )}
               >
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
                   {section.heading}
                 </p>
                 <ul className="flex flex-col gap-2">

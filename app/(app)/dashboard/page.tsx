@@ -20,7 +20,7 @@ export default function Page() {
           minSize="40%"
           className="min-w-0"
         >
-          <div className="scrollbar-thin flex h-full min-w-0 flex-col gap-4 overflow-auto px-4 pt-4">
+          <div className="flex scrollbar-thin h-full min-w-0 flex-col gap-4 overflow-auto px-4 pt-4">
             <DashboardConsole />
           </div>
         </ResizablePanel>

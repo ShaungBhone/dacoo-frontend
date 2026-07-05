@@ -192,10 +192,12 @@ export function ExperimentsView() {
         {/* Header */}
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
-            <h1 className="text-xl font-semibold tracking-tight">Experiments</h1>
-            <p className="text-sm text-muted-foreground text-pretty">
-              Evaluation runs scoring retrieval configs against a dataset. Select
-              up to three to compare.
+            <h1 className="text-xl font-semibold tracking-tight">
+              Experiments
+            </h1>
+            <p className="text-sm text-pretty text-muted-foreground">
+              Evaluation runs scoring retrieval configs against a dataset.
+              Select up to three to compare.
             </p>
           </div>
           <button
@@ -213,20 +215,14 @@ export function ExperimentsView() {
           <Summary label="Completed" value={String(completed.length)} />
           <Summary
             label="Best faithfulness"
-            value={
-              best ? best.metrics.faithfulness.toFixed(2) : "—"
-            }
+            value={best ? best.metrics.faithfulness.toFixed(2) : "—"}
           />
-          <Summary
-            label="Top run"
-            value={best ? best.id : "—"}
-            mono
-          />
+          <Summary label="Top run" value={best ? best.id : "—"} mono />
         </div>
 
         {/* Experiments table */}
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="hidden grid-cols-[auto_1.5fr_repeat(4,1fr)_auto] items-center gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:grid">
+          <div className="hidden grid-cols-[auto_1.5fr_repeat(4,1fr)_auto] items-center gap-4 border-b border-border px-4 py-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:grid">
             <span className="w-5" />
             <span>Experiment</span>
             {METRIC_LABELS.map((m) => (
@@ -276,7 +272,8 @@ export function ExperimentsView() {
                       )}
                     </span>
                     <span className="truncate font-mono text-xs text-muted-foreground">
-                      {exp.id} · {exp.dataset} · {exp.genModel} · top_k {exp.topK}
+                      {exp.id} · {exp.dataset} · {exp.genModel} · top_k{" "}
+                      {exp.topK}
                       {exp.rerank ? " · rerank" : ""}
                     </span>
                   </div>
@@ -322,13 +319,13 @@ function Summary({
     <div className="rounded-lg border border-border bg-card px-3 py-2.5">
       <p
         className={cn(
-          "text-sm font-semibold leading-tight",
+          "text-sm leading-tight font-semibold",
           mono && "font-mono"
         )}
       >
         {value}
       </p>
-      <p className="mt-0.5 truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+      <p className="mt-0.5 truncate text-[11px] tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
     </div>
@@ -407,12 +404,12 @@ function CompareBar({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr className="text-left text-xs tracking-wide text-muted-foreground uppercase">
                 <th className="pb-2 font-medium">Metric</th>
                 {runs.map((r) => (
                   <th
                     key={r.id}
-                    className="pb-2 text-right font-mono font-medium normal-case text-foreground"
+                    className="pb-2 text-right font-mono font-medium text-foreground normal-case"
                   >
                     {r.id}
                   </th>

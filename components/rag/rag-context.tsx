@@ -47,12 +47,12 @@ type RagContextValue = {
   refreshDatasets: () => Promise<void>
   runResult: RunResult | null
   setRunResult: (result: RunResult | null) => void
-  
+
   // Dynamic Documents state
   documents: DocumentSummary[]
   isLoadingDocuments: boolean
   refreshDocuments: () => Promise<void>
-  
+
   // Dynamic Agents state
   agents: AgentSummary[]
   isLoadingAgents: boolean
@@ -113,8 +113,7 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   // The embedding model is fixed per dataset (it must match how the dataset's
   // documents were embedded), so it is derived from the active dataset rather
   // than being independently editable in the Playground.
-  const embedModel =
-    datasets.find((d) => d.id === datasetId)?.embedModel ?? ""
+  const embedModel = datasets.find((d) => d.id === datasetId)?.embedModel ?? ""
 
   const refreshDatasets = React.useCallback(async () => {
     if (!organization) return
@@ -205,7 +204,9 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       text: "",
       tokens: AVERAGE_CHUNK_TOKENS,
     }))
-    const defaultSystem = agents[0]?.system || "You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so."
+    const defaultSystem =
+      agents[0]?.system ||
+      "You are a helpful assistant. Answer questions strictly using the context provided below. If the context does not contain enough information, say so."
     return computeContextBudget(
       "sample query for budget estimation",
       estimatedChunks,

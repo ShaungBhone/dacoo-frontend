@@ -34,8 +34,7 @@ export function TeamSwitcher({
   onTeamChange?: (id: number) => void
 }) {
   const { isMobile } = useSidebar()
-  const activeTeam =
-    teams.find((t) => t.id === activeTeamId) ?? teams[0]
+  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0]
 
   if (!activeTeam) {
     return null

@@ -1,6 +1,12 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react"
 import { useAuth, type Organization } from "@/contexts/auth-context"
 import { getCookie, setCookie } from "@/lib/cookies"
 
@@ -13,12 +19,16 @@ type OrganizationContextType = {
   setActiveOrganizationId: (id: number) => void
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined)
+const OrganizationContext = createContext<OrganizationContextType | undefined>(
+  undefined
+)
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const organizations = user?.organizations ?? []
-  const [activeOrganizationId, setActiveOrganizationIdState] = useState<number | null>(null)
+  const [activeOrganizationId, setActiveOrganizationIdState] = useState<
+    number | null
+  >(null)
 
   useEffect(() => {
     if (organizations.length === 0) {
@@ -28,7 +38,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
     const cookieValue = getCookie(ACTIVE_ORG_COOKIE)
     const cookieId = cookieValue ? Number(cookieValue) : null
-    const cookieIsValid = cookieId !== null && organizations.some((org) => org.id === cookieId)
+    const cookieIsValid =
+      cookieId !== null && organizations.some((org) => org.id === cookieId)
 
     setActiveOrganizationIdState((current) => {
       if (current !== null && organizations.some((org) => org.id === current)) {
@@ -63,7 +74,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 export function useOrganization() {
   const context = useContext(OrganizationContext)
   if (context === undefined) {
-    throw new Error("useOrganization must be used within an OrganizationProvider")
+    throw new Error(
+      "useOrganization must be used within an OrganizationProvider"
+    )
   }
   return context
 }

@@ -18,12 +18,17 @@ export function LanguageSwitcher() {
     { code: "my", name: "မြန်မာ", flag: "🇲🇲" },
   ]
 
-  const activeLanguage = languages.find((lang) => lang.code === locale) || languages[0]
+  const activeLanguage =
+    languages.find((lang) => lang.code === locale) || languages[0]
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 hover:bg-accent hover:text-accent-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-2 px-2 hover:bg-accent hover:text-accent-foreground"
+        >
           <Globe className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-medium">{activeLanguage.name}</span>
         </Button>
@@ -32,7 +37,7 @@ export function LanguageSwitcher() {
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            className="flex items-center justify-between cursor-pointer text-xs"
+            className="flex cursor-pointer items-center justify-between text-xs"
             onClick={() => setLocale(lang.code)}
           >
             <span>{lang.name}</span>

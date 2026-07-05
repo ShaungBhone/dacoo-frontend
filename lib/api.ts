@@ -87,7 +87,10 @@ export async function apiFetch<T>(
  * Fetch a binary response (e.g. a PDF) and trigger a browser download,
  * since <a href> can't carry the Bearer auth header these endpoints require.
  */
-export async function apiDownload(endpoint: string, filename: string): Promise<void> {
+export async function apiDownload(
+  endpoint: string,
+  filename: string
+): Promise<void> {
   const token = getCookie("auth_token")
   const headers = new Headers()
   if (token) headers.set("Authorization", `Bearer ${token}`)

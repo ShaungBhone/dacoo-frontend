@@ -135,7 +135,9 @@ export type Invoice = {
   created_at: string
 }
 
-export async function fetchInvoices(organizationId: number): Promise<Invoice[]> {
+export async function fetchInvoices(
+  organizationId: number
+): Promise<Invoice[]> {
   const res = await apiFetch<{ data: Invoice[] }>(
     `/api/v1/organizations/${organizationId}/invoices`
   )

@@ -46,8 +46,12 @@ export function KnowledgeBase() {
         onValueChange={(val) => setDatasetId(val)}
         disabled={isLoadingDatasets || datasets.length === 0}
       >
-        <SelectTrigger className="w-full text-xs h-8">
-          <SelectValue placeholder={isLoadingDatasets ? "Loading datasets…" : "No datasets yet"} />
+        <SelectTrigger className="h-8 w-full text-xs">
+          <SelectValue
+            placeholder={
+              isLoadingDatasets ? "Loading datasets…" : "No datasets yet"
+            }
+          />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>

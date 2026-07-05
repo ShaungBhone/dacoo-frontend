@@ -90,15 +90,17 @@ export function QueryBar({
   const [previewAgentId, setPreviewAgentId] = React.useState(agentId)
   const [modelPickerOpen, setModelPickerOpen] = React.useState(false)
   const [agentPickerOpen, setAgentPickerOpen] = React.useState(false)
-  const [suggestionsPickerOpen, setSuggestionsPickerOpen] = React.useState(false)
+  const [suggestionsPickerOpen, setSuggestionsPickerOpen] =
+    React.useState(false)
   const [suggestionsOpened, setSuggestionsOpened] = React.useState(false)
 
-  const active = agents.find((a) => a.id === agentId) ?? agents[0] ?? {
-    id: "loading",
-    label: "Loading...",
-    description: "Please wait...",
-    system: "",
-  }
+  const active = agents.find((a) => a.id === agentId) ??
+    agents[0] ?? {
+      id: "loading",
+      label: "Loading...",
+      description: "Please wait...",
+      system: "",
+    }
   const previewAgent = agents.find((a) => a.id === previewAgentId) ?? active
 
   React.useEffect(() => {
@@ -117,7 +119,7 @@ export function QueryBar({
     modelCatalog.chatModels.find((m) => m.id === genModel) ?? null
   const modelLabel = activeModel?.label
     ? stripVendorPrefix(activeModel.label)
-    : (genModel || "Select model")
+    : genModel || "Select model"
   const modelDisabled =
     disabled || isLoadingModels || modelCatalog.chatModels.length === 0
   const suggestionsDisabled = disabled || isLoadingSuggestions
@@ -152,9 +154,7 @@ export function QueryBar({
                 <span className="truncate">{active.label}</span>
               </PromptInputButton>
             </DialogTrigger>
-            <DialogContent
-              className="sm:max-w-2xl p-0 gap-0"
-            >
+            <DialogContent className="gap-0 p-0 sm:max-w-2xl">
               <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Agents</p>

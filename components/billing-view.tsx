@@ -82,9 +82,13 @@ export function BillingView() {
   const organization = useActiveOrganization()
   const [topUpOpen, setTopUpOpen] = React.useState(false)
 
-  const [subscription, setSubscription] = React.useState<Subscription | null>(null)
+  const [subscription, setSubscription] = React.useState<Subscription | null>(
+    null
+  )
   const [isLoadingSubscription, setIsLoadingSubscription] = React.useState(true)
-  const [subscriptionError, setSubscriptionError] = React.useState<string | null>(null)
+  const [subscriptionError, setSubscriptionError] = React.useState<
+    string | null
+  >(null)
   const [planPickerOpen, setPlanPickerOpen] = React.useState(false)
 
   const [wallets, setWallets] = React.useState<Wallet[]>([])
@@ -98,7 +102,9 @@ export function BillingView() {
   const [invoices, setInvoices] = React.useState<Invoice[]>([])
   const [isLoadingInvoices, setIsLoadingInvoices] = React.useState(true)
   const [invoicesError, setInvoicesError] = React.useState<string | null>(null)
-  const [downloadingInvoiceId, setDownloadingInvoiceId] = React.useState<number | null>(null)
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = React.useState<
+    number | null
+  >(null)
 
   const loadSubscription = React.useCallback(async () => {
     if (!organization) return
@@ -160,8 +166,11 @@ export function BillingView() {
     loadInvoices()
   }, [loadInvoices])
 
-  const creditWallet = wallets.find((w) => w.currency_code === CREDIT_CURRENCY) ?? null
-  const otherWallets = wallets.filter((w) => w.currency_code !== CREDIT_CURRENCY)
+  const creditWallet =
+    wallets.find((w) => w.currency_code === CREDIT_CURRENCY) ?? null
+  const otherWallets = wallets.filter(
+    (w) => w.currency_code !== CREDIT_CURRENCY
+  )
 
   const loadUsage = React.useCallback(async () => {
     if (!organization || isLoadingWallets) return
@@ -180,7 +189,9 @@ export function BillingView() {
       setModelUsage(usage)
     } catch (err) {
       setUsageError(
-        err instanceof ApiError ? err.message : "Failed to load usage breakdown."
+        err instanceof ApiError
+          ? err.message
+          : "Failed to load usage breakdown."
       )
     } finally {
       setIsLoadingUsage(false)
@@ -204,18 +215,21 @@ export function BillingView() {
     }
   }
 
-  const totalUsedThisMonth = modelUsage.reduce((acc, m) => acc + m.credits_used, 0)
+  const totalUsedThisMonth = modelUsage.reduce(
+    (acc, m) => acc + m.credits_used,
+    0
+  )
   const balance = creditWallet ? Number(creditWallet.balance) : 0
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight">Billing</h1>
-          <p className="text-sm text-muted-foreground text-pretty">
-            Manage your organization&apos;s plan, AI credit balance, usage breakdown, and invoice history.
+          <p className="text-sm text-pretty text-muted-foreground">
+            Manage your organization&apos;s plan, AI credit balance, usage
+            breakdown, and invoice history.
           </p>
         </header>
 
@@ -230,7 +244,7 @@ export function BillingView() {
 
         {/* ── Credit balance card ─────────────────────────────────────────  */}
         {isLoadingWallets ? (
-          <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+          <Card className="gap-0 border border-border py-0 shadow-none ring-0">
             <CardContent className="flex flex-col gap-3 p-5">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-10 w-56" />
@@ -238,18 +252,25 @@ export function BillingView() {
             </CardContent>
           </Card>
         ) : walletsError ? (
-          <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+          <Card className="gap-0 border border-border py-0 shadow-none ring-0">
             <CardContent className="p-0">
               <Empty className="border-0 p-6">
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
                     <CircleAlertIcon />
                   </EmptyMedia>
-                  <EmptyTitle>Couldn&apos;t load your credit balance</EmptyTitle>
+                  <EmptyTitle>
+                    Couldn&apos;t load your credit balance
+                  </EmptyTitle>
                   <EmptyDescription>{walletsError}</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                  <Button type="button" variant="outline" size="sm" onClick={loadWallets}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={loadWallets}
+                  >
                     Retry
                   </Button>
                 </EmptyContent>
@@ -257,13 +278,16 @@ export function BillingView() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+          <Card className="gap-0 border border-border py-0 shadow-none ring-0">
             <CardContent className="flex flex-col gap-6 p-5 sm:flex-row sm:items-start sm:justify-between">
               {/* Left: balance */}
-              <div className="flex flex-col gap-4 min-w-0">
+              <div className="flex min-w-0 flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                    <CoinsIcon className="size-4 text-primary" aria-hidden="true" />
+                    <CoinsIcon
+                      className="size-4 text-primary"
+                      aria-hidden="true"
+                    />
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">
                     Organization Credits
@@ -289,10 +313,7 @@ export function BillingView() {
 
               {/* Right: actions */}
               <div className="flex flex-col gap-2 sm:items-end">
-                <Button
-                  type="button"
-                  onClick={() => setTopUpOpen(true)}
-                >
+                <Button type="button" onClick={() => setTopUpOpen(true)}>
                   <PlusIcon data-icon="inline-start" aria-hidden="true" />
                   Purchase Credits
                 </Button>
@@ -321,7 +342,7 @@ export function BillingView() {
               <Skeleton className="h-32 w-full" />
             </div>
           ) : usageError ? (
-            <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
               <CardContent className="p-0">
                 <Empty className="border-0 p-6">
                   <EmptyHeader>
@@ -332,7 +353,12 @@ export function BillingView() {
                     <EmptyDescription>{usageError}</EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
-                    <Button type="button" variant="outline" size="sm" onClick={loadUsage}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={loadUsage}
+                    >
                       Retry
                     </Button>
                   </EmptyContent>
@@ -340,7 +366,7 @@ export function BillingView() {
               </CardContent>
             </Card>
           ) : modelUsage.length === 0 ? (
-            <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
               <CardContent className="p-0">
                 <Empty className="border-0 p-6">
                   <EmptyHeader>
@@ -349,7 +375,8 @@ export function BillingView() {
                     </EmptyMedia>
                     <EmptyTitle>No usage yet this month</EmptyTitle>
                     <EmptyDescription>
-                      Credit usage will show up here once your AI assistant starts replying.
+                      Credit usage will show up here once your AI assistant
+                      starts replying.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
@@ -361,7 +388,11 @@ export function BillingView() {
                 <ModelCard
                   key={m.model}
                   usage={m}
-                  pct={totalUsedThisMonth > 0 ? Math.round((m.credits_used / totalUsedThisMonth) * 100) : 0}
+                  pct={
+                    totalUsedThisMonth > 0
+                      ? Math.round((m.credits_used / totalUsedThisMonth) * 100)
+                      : 0
+                  }
                   colorIndex={i}
                 />
               ))}
@@ -381,7 +412,7 @@ export function BillingView() {
           {isLoadingInvoices ? (
             <Skeleton className="h-40 w-full rounded-xl" />
           ) : invoicesError ? (
-            <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
               <CardContent className="p-0">
                 <Empty className="border-0 p-6">
                   <EmptyHeader>
@@ -392,7 +423,12 @@ export function BillingView() {
                     <EmptyDescription>{invoicesError}</EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
-                    <Button type="button" variant="outline" size="sm" onClick={loadInvoices}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={loadInvoices}
+                    >
                       Retry
                     </Button>
                   </EmptyContent>
@@ -400,7 +436,7 @@ export function BillingView() {
               </CardContent>
             </Card>
           ) : invoices.length === 0 ? (
-            <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
               <CardContent className="p-0">
                 <Empty className="border-0 p-6">
                   <EmptyHeader>
@@ -409,7 +445,8 @@ export function BillingView() {
                     </EmptyMedia>
                     <EmptyTitle>No invoices yet</EmptyTitle>
                     <EmptyDescription>
-                      Invoices for your organization will appear here once issued.
+                      Invoices for your organization will appear here once
+                      issued.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
@@ -420,17 +457,25 @@ export function BillingView() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="px-4 py-2.5 text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Invoice</TableHead>
-                    <TableHead className="hidden sm:table-cell px-4 py-2.5 text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Due</TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Total</TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Status</TableHead>
+                    <TableHead className="px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Invoice
+                    </TableHead>
+                    <TableHead className="hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
+                      Due
+                    </TableHead>
+                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Total
+                    </TableHead>
+                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Status
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {invoices.map((inv) => (
                     <TableRow key={inv.id} className="hover:bg-muted/20">
                       <TableCell className="px-4 py-3">
-                        <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="font-mono text-sm font-medium text-foreground tabular-nums">
                             {inv.number}
                           </span>
@@ -439,17 +484,19 @@ export function BillingView() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell px-4 py-3 text-sm text-muted-foreground">
+                      <TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">
                         {formatDate(inv.due_at)}
                         {inv.is_overdue && (
-                          <span className="ml-2 text-xs font-medium text-destructive">Overdue</span>
+                          <span className="ml-2 text-xs font-medium text-destructive">
+                            Overdue
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right font-mono text-sm font-medium text-foreground tabular-nums">
                         ${Number(inv.total).toFixed(2)}
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <div className="flex items-center gap-2 justify-end">
+                        <div className="flex items-center justify-end gap-2">
                           <StatusBadge status={inv.status} />
                           <Button
                             type="button"
@@ -482,10 +529,14 @@ export function BillingView() {
           organizationId={organization.id}
           sourceWallets={otherWallets}
           onClose={() => setTopUpOpen(false)}
-          onTopUp={(updated) => setWallets((prev) => {
-            const rest = prev.filter((w) => w.currency_code !== CREDIT_CURRENCY)
-            return [...rest, updated]
-          })}
+          onTopUp={(updated) =>
+            setWallets((prev) => {
+              const rest = prev.filter(
+                (w) => w.currency_code !== CREDIT_CURRENCY
+              )
+              return [...rest, updated]
+            })
+          }
         />
       )}
 
@@ -521,17 +572,21 @@ function formatDate(value: string | null): string {
   })
 }
 
-function SubscriptionStatusBadge({ status }: { status: Subscription["status"] }) {
+function SubscriptionStatusBadge({
+  status,
+}: {
+  status: Subscription["status"]
+}) {
   if (status === "active") {
     return (
-      <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-transparent shadow-none">
+      <Badge className="border-transparent bg-primary/10 text-primary shadow-none hover:bg-primary/10">
         Active
       </Badge>
     )
   }
   if (status === "trialing") {
     return (
-      <Badge className="bg-chart-1/20 text-chart-4 hover:bg-chart-1/20 border-transparent shadow-none">
+      <Badge className="border-transparent bg-chart-1/20 text-chart-4 shadow-none hover:bg-chart-1/20">
         Trialing
       </Badge>
     )
@@ -565,7 +620,7 @@ function CurrentPlanCard({
 }) {
   if (isLoading && !subscription) {
     return (
-      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+      <Card className="gap-0 border border-border py-0 shadow-none ring-0">
         <CardContent className="flex flex-col gap-3 p-5">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-8 w-48" />
@@ -577,7 +632,7 @@ function CurrentPlanCard({
 
   if (error && !subscription) {
     return (
-      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+      <Card className="gap-0 border border-border py-0 shadow-none ring-0">
         <CardContent className="p-0">
           <Empty className="border-0 p-6">
             <EmptyHeader>
@@ -588,7 +643,12 @@ function CurrentPlanCard({
               <EmptyDescription>{error}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+              >
                 Retry
               </Button>
             </EmptyContent>
@@ -600,7 +660,7 @@ function CurrentPlanCard({
 
   if (!subscription) {
     return (
-      <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+      <Card className="gap-0 border border-border py-0 shadow-none ring-0">
         <CardContent className="p-0">
           <Empty className="border-0 p-6">
             <EmptyHeader>
@@ -613,7 +673,12 @@ function CurrentPlanCard({
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+              >
                 Retry
               </Button>
             </EmptyContent>
@@ -633,9 +698,9 @@ function CurrentPlanCard({
           : `Ended ${formatDate(subscription.ends_at)}`
 
   return (
-    <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+    <Card className="gap-0 border border-border py-0 shadow-none ring-0">
       <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-2 min-w-0">
+        <div className="flex min-w-0 flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <LayersIcon className="size-4 text-primary" aria-hidden="true" />
@@ -665,7 +730,14 @@ function CurrentPlanCard({
 }
 
 const MODEL_ICONS = [BrainIcon, SparklesIcon, ZapIcon, CpuIcon]
-const MODEL_COLORS = ["bg-primary", "bg-chart-1", "bg-chart-3", "bg-chart-5", "bg-chart-2", "bg-chart-4"]
+const MODEL_COLORS = [
+  "bg-primary",
+  "bg-chart-1",
+  "bg-chart-3",
+  "bg-chart-5",
+  "bg-chart-2",
+  "bg-chart-4",
+]
 
 function ModelCard({
   usage,
@@ -680,13 +752,16 @@ function ModelCard({
   const color = MODEL_COLORS[colorIndex % MODEL_COLORS.length]
 
   return (
-    <Card className="shadow-none border border-border ring-0 py-0 gap-0">
+    <Card className="gap-0 border border-border py-0 shadow-none ring-0">
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex min-w-0 flex-col gap-1">
             <div className="flex items-center gap-1.5">
-              <Icon className="size-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
-              <span className="font-mono text-xs text-muted-foreground truncate">
+              <Icon
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="truncate font-mono text-xs text-muted-foreground">
                 {usage.model}
               </span>
             </div>
@@ -723,7 +798,7 @@ function ModelCard({
 function StatusBadge({ status }: { status: InvoiceStatus }) {
   if (status === "paid") {
     return (
-      <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-transparent shadow-none">
+      <Badge className="border-transparent bg-primary/10 text-primary shadow-none hover:bg-primary/10">
         <CircleCheckIcon data-icon="inline-start" aria-hidden="true" />
         Paid
       </Badge>
@@ -731,7 +806,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   }
   if (status === "sent") {
     return (
-      <Badge className="bg-chart-1/20 text-chart-4 hover:bg-chart-1/20 border-transparent shadow-none">
+      <Badge className="border-transparent bg-chart-1/20 text-chart-4 shadow-none hover:bg-chart-1/20">
         <ClockIcon data-icon="inline-start" aria-hidden="true" />
         Sent
       </Badge>
@@ -788,7 +863,9 @@ function TopUpDialog({
       onTopUp(updated)
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to top up credits.")
+      setError(
+        err instanceof ApiError ? err.message : "Failed to top up credits."
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -796,12 +873,18 @@ function TopUpDialog({
 
   if (sourceWallets.length === 0) {
     return (
-      <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+      <Dialog
+        open={true}
+        onOpenChange={(open) => {
+          if (!open) onClose()
+        }}
+      >
         <DialogContent className="max-w-md gap-0 p-0">
           <DialogHeader className="border-b border-border px-5 py-4">
             <DialogTitle>Purchase Credits</DialogTitle>
             <DialogDescription>
-              Credits are converted from another currency wallet your organization holds.
+              Credits are converted from another currency wallet your
+              organization holds.
             </DialogDescription>
           </DialogHeader>
           <Empty className="border-0 p-6">
@@ -811,8 +894,8 @@ function TopUpDialog({
               </EmptyMedia>
               <EmptyTitle>No funding source available</EmptyTitle>
               <EmptyDescription>
-                Your organization doesn&apos;t hold a balance in any other currency to
-                convert into credits. Contact support to add funds.
+                Your organization doesn&apos;t hold a balance in any other
+                currency to convert into credits. Contact support to add funds.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -822,7 +905,12 @@ function TopUpDialog({
   }
 
   return (
-    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
       <DialogContent className="max-w-md gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle>Purchase Credits</DialogTitle>
@@ -833,7 +921,10 @@ function TopUpDialog({
 
         <div className="flex flex-col gap-4 p-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground" htmlFor="topup-source">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="topup-source"
+            >
               Pay from wallet
             </label>
             <Select value={sourceCurrency} onValueChange={setSourceCurrency}>
@@ -843,7 +934,8 @@ function TopUpDialog({
               <SelectContent>
                 {sourceWallets.map((w) => (
                   <SelectItem key={w.currency_code} value={w.currency_code}>
-                    {w.currency_code} &middot; {w.formatted_balance ?? w.balance} available
+                    {w.currency_code} &middot;{" "}
+                    {w.formatted_balance ?? w.balance} available
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -851,7 +943,10 @@ function TopUpDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground" htmlFor="topup-amount">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="topup-amount"
+            >
               Amount
             </label>
             <Input

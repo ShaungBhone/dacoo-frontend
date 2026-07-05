@@ -10,7 +10,7 @@ export function RailHeading({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
       <span className="text-muted-foreground">{icon}</span>
       {children}
     </div>

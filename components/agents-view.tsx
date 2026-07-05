@@ -42,17 +42,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet"
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-} from "@/components/ui/alert"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -60,15 +51,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { useSearchParams } from "next/navigation"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import {
@@ -198,11 +182,15 @@ export function AgentsView() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Agents</h1>
-            <p className="text-sm text-muted-foreground text-pretty">
+            <p className="text-sm text-pretty text-muted-foreground">
               Manage your AI agents — create, configure, and remove them here.
             </p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="self-start sm:self-auto" disabled={!organization}>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="self-start sm:self-auto"
+            disabled={!organization}
+          >
             <PlusIcon data-icon="inline-start" />
             New agent
           </Button>
@@ -210,12 +198,36 @@ export function AgentsView() {
 
         {/* Stats strip */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="Total" value={isLoading ? "..." : String(agents.length)} />
-          <StatCard label="Active" value={isLoading ? "..." : String(agents.filter((a) => a.status === "active").length)} highlight />
-          <StatCard label="Draft" value={isLoading ? "..." : String(agents.filter((a) => a.status === "draft").length)} />
+          <StatCard
+            label="Total"
+            value={isLoading ? "..." : String(agents.length)}
+          />
+          <StatCard
+            label="Active"
+            value={
+              isLoading
+                ? "..."
+                : String(agents.filter((a) => a.status === "active").length)
+            }
+            highlight
+          />
+          <StatCard
+            label="Draft"
+            value={
+              isLoading
+                ? "..."
+                : String(agents.filter((a) => a.status === "draft").length)
+            }
+          />
           <StatCard
             label="Messages"
-            value={isLoading ? "..." : agents.reduce((s, a) => s + a.messageCount, 0).toLocaleString()}
+            value={
+              isLoading
+                ? "..."
+                : agents
+                    .reduce((s, a) => s + a.messageCount, 0)
+                    .toLocaleString()
+            }
           />
         </div>
 
@@ -245,7 +257,7 @@ export function AgentsView() {
 
         {/* Table */}
         <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
+          <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid">
             <span>Agent</span>
             <span className="w-20 text-right">Messages</span>
             <span className="w-20 text-center">Status</span>
@@ -255,13 +267,17 @@ export function AgentsView() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-2 px-4 py-14 text-center">
               <Spinner className="size-8 text-primary" />
-              <p className="text-sm font-medium text-muted-foreground">Loading agents…</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Loading agents…
+              </p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-14 text-center">
               <BotIcon className="size-8 text-muted-foreground/40" />
               <p className="text-sm font-medium text-muted-foreground">
-                {agents.length === 0 ? "No agents yet." : `No agents match "${search}".`}
+                {agents.length === 0
+                  ? "No agents yet."
+                  : `No agents match "${search}".`}
               </p>
               {agents.length === 0 && (
                 <Button
@@ -281,17 +297,25 @@ export function AgentsView() {
                   className="grid grid-cols-1 gap-2 border-b border-border px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center sm:gap-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <BotIcon className="size-4" />
-                    </span>
+                    <img
+                      src={`https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(agent.name)}`}
+                      alt={agent.name}
+                      className="size-8 shrink-0 rounded-md border border-border bg-muted object-cover"
+                    />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{agent.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{agent.description}</p>
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {agent.name}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {agent.description}
+                      </p>
                     </div>
                   </div>
 
                   <span className="font-mono text-sm text-muted-foreground sm:w-20 sm:text-right">
-                    <span className="mr-1 text-muted-foreground sm:hidden">Messages: </span>
+                    <span className="mr-1 text-muted-foreground sm:hidden">
+                      Messages:{" "}
+                    </span>
                     {agent.messageCount.toLocaleString()}
                   </span>
 
@@ -326,7 +350,8 @@ export function AgentsView() {
 
         {!isLoading && filtered.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            {filtered.length} of {agents.length} agent{agents.length !== 1 ? "s" : ""}
+            {filtered.length} of {agents.length} agent
+            {agents.length !== 1 ? "s" : ""}
           </p>
         )}
       </div>
@@ -390,8 +415,12 @@ function AgentFormDialog({
   preselectedDatasetId?: string | null
 }) {
   const [name, setName] = React.useState(initial?.name ?? "")
-  const [description, setDescription] = React.useState(initial?.description ?? "")
-  const [status, setStatus] = React.useState<AgentStatus>(initial?.status ?? "draft")
+  const [description, setDescription] = React.useState(
+    initial?.description ?? ""
+  )
+  const [status, setStatus] = React.useState<AgentStatus>(
+    initial?.status ?? "draft"
+  )
   const [system, setSystem] = React.useState(initial?.system ?? "")
   const [isSaving, setIsSaving] = React.useState(false)
 
@@ -400,24 +429,35 @@ function AgentFormDialog({
   const [selectedDatasetId, setSelectedDatasetId] = React.useState("")
   const [selectedTemplateId, setSelectedTemplateId] = React.useState("support")
 
-  const canSubmit = name.trim().length > 0 && system.trim().length > 0 && !isSaving
+  const canSubmit =
+    name.trim().length > 0 && system.trim().length > 0 && !isSaving
 
-  const applyTemplate = React.useCallback((dsId: string, templateId: string) => {
-    const ds = datasets.find((d) => d.id === dsId)
-    const tmpl = AGENTS.find((a) => a.id === templateId)
-    if (!ds || !tmpl) return
+  const applyTemplate = React.useCallback(
+    (dsId: string, templateId: string) => {
+      const ds = datasets.find((d) => d.id === dsId)
+      const tmpl = AGENTS.find((a) => a.id === templateId)
+      if (!ds || !tmpl) return
 
-    const suffix = tmpl.id === "default" ? "Assistant" : tmpl.label
-    setName(`${ds.name} ${suffix}`)
-    setDescription(`AI Agent optimized for ${ds.name} using the ${tmpl.label.toLowerCase()} template.`)
-    
-    // Format system prompt to explicitly reference the dataset
-    const customPrompt = `${tmpl.system}\n\nInstructions:\n- Answer queries strictly using the retrieved context from the dataset: "${ds.name}".\n- Be factual and do not make up facts outside the provided knowledge.`
-    setSystem(customPrompt)
-  }, [datasets])
+      const suffix = tmpl.id === "default" ? "Assistant" : tmpl.label
+      setName(`${ds.name} ${suffix}`)
+      setDescription(
+        `AI Agent optimized for ${ds.name} using the ${tmpl.label.toLowerCase()} template.`
+      )
+
+      // Format system prompt to explicitly reference the dataset
+      const customPrompt = `${tmpl.system}\n\nInstructions:\n- Answer queries strictly using the retrieved context from the dataset: "${ds.name}".\n- Be factual and do not make up facts outside the provided knowledge.`
+      setSystem(customPrompt)
+    },
+    [datasets]
+  )
 
   React.useEffect(() => {
-    if (open && mode === "create" && preselectedDatasetId && datasets.length > 0) {
+    if (
+      open &&
+      mode === "create" &&
+      preselectedDatasetId &&
+      datasets.length > 0
+    ) {
       const exists = datasets.some((d) => d.id === preselectedDatasetId)
       if (exists) {
         setSelectedDatasetId(preselectedDatasetId)
@@ -433,7 +473,12 @@ function AgentFormDialog({
   function handleSubmit() {
     if (!canSubmit) return
     setIsSaving(true)
-    onSubmit({ name: name.trim(), description: description.trim(), status, system: system.trim() })
+    onSubmit({
+      name: name.trim(),
+      description: description.trim(),
+      status,
+      system: system.trim(),
+    })
     setIsSaving(false)
   }
 
@@ -470,44 +515,51 @@ function AgentFormDialog({
         </SheetHeader>
 
         {/* Scrollable body containing recommendation section and form fields */}
-        <div className="flex-1 overflow-y-auto px-6 flex flex-col gap-5">
-          {mode === "create" && datasets.length > 0 && showRecommendation && !isUsingTemplate && (
-            <Alert>
-              <SparklesIcon className="size-4 text-primary animate-pulse" />
-              <AlertTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5 ml-2">
-                Recommended Agent Template
-              </AlertTitle>
-              <AlertDescription className="text-xs text-muted-foreground leading-relaxed mt-1.5 ml-2">
-                We detected that you have datasets available. Would you like to use an agent template tailored to your data?
-                <div className="flex gap-2 pt-2.5">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setShowRecommendation(false)
-                      setIsUsingTemplate(true)
-                      applyTemplate(selectedDatasetId || datasets[0]?.id, selectedTemplateId)
-                    }}
-                    className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                  >
-                    Yes, recommend template
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowRecommendation(false)}
-                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    No, start from scratch
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6">
+          {mode === "create" &&
+            datasets.length > 0 &&
+            showRecommendation &&
+            !isUsingTemplate && (
+              <Alert>
+                <SparklesIcon className="size-4 animate-pulse text-primary" />
+                <AlertTitle className="ml-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  Recommended Agent Template
+                </AlertTitle>
+                <AlertDescription className="mt-1.5 ml-2 text-xs leading-relaxed text-muted-foreground">
+                  We detected that you have datasets available. Would you like
+                  to use an agent template tailored to your data?
+                  <div className="flex gap-2 pt-2.5">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setShowRecommendation(false)
+                        setIsUsingTemplate(true)
+                        applyTemplate(
+                          selectedDatasetId || datasets[0]?.id,
+                          selectedTemplateId
+                        )
+                      }}
+                      className="h-7 bg-primary text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Yes, recommend template
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRecommendation(false)}
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      No, start from scratch
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
           {mode === "create" && datasets.length > 0 && isUsingTemplate && (
             <Card size="sm" className="bg-muted/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <CardHeader className="flex flex-row items-center justify-between border-none pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   <WandSparklesIcon className="size-3.5 text-primary" />
                   Template Generator
                 </CardTitle>
@@ -520,7 +572,7 @@ function AgentFormDialog({
                     setDescription("")
                     setSystem("")
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground h-6 px-2"
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Cancel template
                 </Button>
@@ -529,7 +581,10 @@ function AgentFormDialog({
               <CardContent className="grid grid-cols-2 gap-3 pb-4">
                 {/* Dataset Select */}
                 <Field className="space-y-1">
-                  <FieldLabel htmlFor="template-dataset" className="text-xs font-medium text-muted-foreground">
+                  <FieldLabel
+                    htmlFor="template-dataset"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
                     Dataset
                   </FieldLabel>
                   <Select
@@ -539,7 +594,11 @@ function AgentFormDialog({
                       applyTemplate(val, selectedTemplateId)
                     }}
                   >
-                    <SelectTrigger id="template-dataset" size="sm" className="w-full">
+                    <SelectTrigger
+                      id="template-dataset"
+                      size="sm"
+                      className="w-full"
+                    >
                       <SelectValue placeholder="Select dataset" />
                     </SelectTrigger>
                     <SelectContent>
@@ -554,7 +613,10 @@ function AgentFormDialog({
 
                 {/* Template Select */}
                 <Field className="space-y-1">
-                  <FieldLabel htmlFor="template-type" className="text-xs font-medium text-muted-foreground">
+                  <FieldLabel
+                    htmlFor="template-type"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
                     Template Style
                   </FieldLabel>
                   <Select
@@ -564,7 +626,11 @@ function AgentFormDialog({
                       applyTemplate(selectedDatasetId, val)
                     }}
                   >
-                    <SelectTrigger id="template-type" size="sm" className="w-full">
+                    <SelectTrigger
+                      id="template-type"
+                      size="sm"
+                      className="w-full"
+                    >
                       <SelectValue placeholder="Select style" />
                     </SelectTrigger>
                     <SelectContent>
@@ -587,19 +653,24 @@ function AgentFormDialog({
                 <FieldLabel htmlFor="agent-name">
                   Name <span className="text-destructive">*</span>
                 </FieldLabel>
-                {mode === "create" && datasets.length > 0 && !isUsingTemplate && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setIsUsingTemplate(true)
-                      applyTemplate(selectedDatasetId || datasets[0]?.id, selectedTemplateId)
-                    }}
-                    className="text-xs text-primary hover:text-primary/80 h-7 px-2 flex items-center gap-1 font-medium"
-                  >
-                    <WandSparklesIcon className="size-3" />
-                    Use template
-                  </Button>
-                )}
+                {mode === "create" &&
+                  datasets.length > 0 &&
+                  !isUsingTemplate && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setIsUsingTemplate(true)
+                        applyTemplate(
+                          selectedDatasetId || datasets[0]?.id,
+                          selectedTemplateId
+                        )
+                      }}
+                      className="flex h-7 items-center gap-1 px-2 text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      <WandSparklesIcon className="size-3" />
+                      Use template
+                    </Button>
+                  )}
               </div>
               <Input
                 id="agent-name"
@@ -648,7 +719,11 @@ function AgentFormDialog({
                 className="w-full"
               >
                 {(["active", "inactive", "draft"] as AgentStatus[]).map((s) => (
-                  <ToggleGroupItem key={s} value={s} className="flex-1 capitalize">
+                  <ToggleGroupItem
+                    key={s}
+                    value={s}
+                    className="flex-1 capitalize"
+                  >
                     {s}
                   </ToggleGroupItem>
                 ))}
@@ -658,11 +733,19 @@ function AgentFormDialog({
         </div>
 
         <SheetFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            {isSaving ? <Spinner /> : <CheckCircle2Icon data-icon="inline-start" />}
+            {isSaving ? (
+              <Spinner />
+            ) : (
+              <CheckCircle2Icon data-icon="inline-start" />
+            )}
             {mode === "create" ? "Create" : "Save changes"}
           </Button>
         </SheetFooter>
@@ -698,8 +781,8 @@ function DeleteConfirmDialog({
           </DialogTitle>
           <DialogDescription>
             Are you sure you want to delete{" "}
-            <span className="font-medium text-foreground">{agentName}</span>? This action cannot be
-            undone.
+            <span className="font-medium text-foreground">{agentName}</span>?
+            This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -734,13 +817,13 @@ function StatCard({
       <div className="min-w-0">
         <p
           className={cn(
-            "font-mono text-sm font-semibold leading-tight",
+            "font-mono text-sm leading-tight font-semibold",
             highlight ? "text-primary" : "text-foreground"
           )}
         >
           {value}
         </p>
-        <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        <p className="truncate text-[11px] tracking-wide text-muted-foreground uppercase">
           {label}
         </p>
       </div>
@@ -769,7 +852,10 @@ function AgentStatusBadge({ status }: { status: AgentStatus }) {
     )
   }
   return (
-    <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+    <Badge
+      variant="outline"
+      className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+    >
       <Spinner className="size-3!" />
       Draft
     </Badge>

@@ -140,7 +140,11 @@ export async function runDatasetQuery(
 export async function fetchSuggestions(
   organizationId: number,
   datasetId: string,
-  input: { systemPrompt: string; agentLabel?: string; lastQuery?: string | null },
+  input: {
+    systemPrompt: string
+    agentLabel?: string
+    lastQuery?: string | null
+  },
   signal?: AbortSignal
 ): Promise<QuerySuggestion[]> {
   const res = await apiFetch<{ suggestions: QuerySuggestion[] }>(
@@ -175,10 +179,10 @@ export async function fetchAgents(
   const res = await apiFetch<{ data: AgentSummary[] }>(
     `/api/v1/organizations/${organizationId}/agents`
   )
-  return res.data.map(agent => ({
+  return res.data.map((agent) => ({
     ...agent,
     description: agent.description || "",
-    label: agent.name // Map name to label for compatibility
+    label: agent.name, // Map name to label for compatibility
   }))
 }
 
@@ -193,7 +197,7 @@ export async function createAgent(
   return {
     ...res.data,
     description: res.data.description || "",
-    label: res.data.name
+    label: res.data.name,
   }
 }
 
@@ -209,7 +213,7 @@ export async function updateAgent(
   return {
     ...res.data,
     description: res.data.description || "",
-    label: res.data.name
+    label: res.data.name,
   }
 }
 
@@ -217,10 +221,9 @@ export async function deleteAgent(
   organizationId: number,
   agentId: string
 ): Promise<void> {
-  await apiFetch(
-    `/api/v1/organizations/${organizationId}/agents/${agentId}`,
-    { method: "DELETE" }
-  )
+  await apiFetch(`/api/v1/organizations/${organizationId}/agents/${agentId}`, {
+    method: "DELETE",
+  })
 }
 
 export type ActivityStatus = "success" | "warning" | "error"
@@ -241,7 +244,12 @@ export type ActivityLogEntry = {
 
 export type ActivityLogPage = {
   data: ActivityLogEntry[]
-  meta: { current_page: number; last_page: number; per_page: number; total: number }
+  meta: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
 }
 
 export async function fetchActivityLogs(

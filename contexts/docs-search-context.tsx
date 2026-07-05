@@ -9,9 +9,15 @@ type DocsSearchContextType = {
   setActiveSectionId: (id: string) => void
 }
 
-const DocsSearchContext = createContext<DocsSearchContextType | undefined>(undefined)
+const DocsSearchContext = createContext<DocsSearchContextType | undefined>(
+  undefined
+)
 
-export function DocsSearchProvider({ children }: { children: React.ReactNode }) {
+export function DocsSearchProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const [query, setQuery] = useState("")
   const [activeSectionId, setActiveSectionId] = useState("getting-started")
 

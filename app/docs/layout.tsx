@@ -24,7 +24,7 @@ export default function DocsLayout({
     <DocsSearchProvider>
       <SidebarProvider>
         <DocsSidebar />
-        <SidebarInset className="h-svh min-w-0 overflow-hidden flex flex-col bg-background">
+        <SidebarInset className="flex h-svh min-w-0 flex-col overflow-hidden bg-background">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -47,9 +47,7 @@ export default function DocsLayout({
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
+          <div className="flex-1 overflow-y-auto">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </DocsSearchProvider>

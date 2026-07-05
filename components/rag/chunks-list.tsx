@@ -103,9 +103,7 @@ function FieldValue({ value }: { value: string }) {
   }
 
   return (
-    <dd className="min-w-0 text-xs break-words text-foreground/90">
-      {value}
-    </dd>
+    <dd className="min-w-0 text-xs break-words text-foreground/90">{value}</dd>
   )
 }
 
@@ -182,7 +180,7 @@ export function ChunksList({ chunks }: { chunks: Retrieved[] }) {
               <button
                 type="button"
                 onClick={() => setSelectedChunk(chunk)}
-                className="w-full rounded-lg px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="w-full rounded-lg px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
               >
                 <div className="flex items-start gap-2">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-primary/10 font-mono text-[10px] font-semibold text-primary">

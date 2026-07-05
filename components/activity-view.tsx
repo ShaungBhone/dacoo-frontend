@@ -86,7 +86,7 @@ export function ActivityView() {
         {/* Header */}
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight">Activity</h1>
-          <p className="text-sm text-muted-foreground text-pretty">
+          <p className="text-sm text-pretty text-muted-foreground">
             Every retrieval request with latency, token usage, and faithfulness.
             Select a row to inspect the trace.
           </p>
@@ -94,11 +94,7 @@ export function ActivityView() {
 
         {/* Summary strip */}
         <div className="grid grid-cols-3 gap-3">
-          <Summary
-            label="Success"
-            value={String(counts.success)}
-            tone="ok"
-          />
+          <Summary label="Success" value={String(counts.success)} tone="ok" />
           <Summary
             label="Warnings"
             value={String(counts.warning)}
@@ -221,9 +217,7 @@ export function ActivityView() {
                             icon={CoinsIcon}
                             label="Tokens"
                             value={
-                              log.tokens > 0
-                                ? log.tokens.toLocaleString()
-                                : "—"
+                              log.tokens > 0 ? log.tokens.toLocaleString() : "—"
                             }
                           />
                           <Detail
@@ -291,8 +285,8 @@ function Summary({
     <div className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5">
       <span className={cn("size-2.5 shrink-0 rounded-full", dot)} />
       <div className="min-w-0">
-        <p className="font-mono text-sm font-semibold leading-tight">{value}</p>
-        <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        <p className="font-mono text-sm leading-tight font-semibold">{value}</p>
+        <p className="truncate text-[11px] tracking-wide text-muted-foreground uppercase">
           {label}
         </p>
       </div>
@@ -321,7 +315,7 @@ function Detail({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+      <span className="flex items-center gap-1 text-[11px] tracking-wide text-muted-foreground uppercase">
         <Icon className="size-3" />
         {label}
       </span>

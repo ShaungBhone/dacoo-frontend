@@ -17,7 +17,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { fetchPlans, changePlan, type Plan, type Subscription } from "@/components/billing-api"
+import {
+  fetchPlans,
+  changePlan,
+  type Plan,
+  type Subscription,
+} from "@/components/billing-api"
 
 function formatPrice(plan: Plan): string {
   const amount = (plan.price / 100).toFixed(2)
@@ -51,7 +56,8 @@ export function PlanPickerDialog({
   const [plans, setPlans] = React.useState<Plan[]>([])
   const [isLoadingPlans, setIsLoadingPlans] = React.useState(true)
   const [loadError, setLoadError] = React.useState<string | null>(null)
-  const [selectedPlanId, setSelectedPlanId] = React.useState<number>(currentPlanId)
+  const [selectedPlanId, setSelectedPlanId] =
+    React.useState<number>(currentPlanId)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
@@ -62,7 +68,9 @@ export function PlanPickerDialog({
       const list = await fetchPlans()
       setPlans(list)
     } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : "Failed to load plans.")
+      setLoadError(
+        err instanceof ApiError ? err.message : "Failed to load plans."
+      )
     } finally {
       setIsLoadingPlans(false)
     }
@@ -81,7 +89,9 @@ export function PlanPickerDialog({
       onChanged(updated)
       onClose()
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Failed to change plan.")
+      setSubmitError(
+        err instanceof ApiError ? err.message : "Failed to change plan."
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -90,8 +100,13 @@ export function PlanPickerDialog({
   const selectedPlan = plans.find((p) => p.id === selectedPlanId)
 
   return (
-    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-md gap-0 p-0">
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent className="max-w-lg gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle>Change Plan</DialogTitle>
           <DialogDescription>
@@ -108,9 +123,17 @@ export function PlanPickerDialog({
             </div>
           ) : loadError ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <CircleAlertIcon className="size-6 text-destructive" aria-hidden="true" />
+              <CircleAlertIcon
+                className="size-6 text-destructive"
+                aria-hidden="true"
+              />
               <p className="text-sm text-muted-foreground">{loadError}</p>
-              <Button type="button" variant="outline" size="sm" onClick={loadPlans}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={loadPlans}
+              >
                 Retry
               </Button>
             </div>
@@ -145,7 +168,7 @@ export function PlanPickerDialog({
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground font-normal">
+                    <span className="text-xs font-normal text-muted-foreground">
                       {summarizeLimits(plan)}
                     </span>
                   </div>
@@ -167,9 +190,7 @@ export function PlanPickerDialog({
             size="lg"
             onClick={handleConfirm}
             disabled={
-              isLoadingPlans ||
-              isSubmitting ||
-              selectedPlanId === currentPlanId
+              isLoadingPlans || isSubmitting || selectedPlanId === currentPlanId
             }
             className="w-full"
           >

@@ -142,7 +142,9 @@ export function DashboardConsole() {
     }
   }, [])
 
-  async function upsertAgent(input: Omit<Agent, "id"> & { id?: string; status?: string }) {
+  async function upsertAgent(
+    input: Omit<Agent, "id"> & { id?: string; status?: string }
+  ) {
     if (!organization) return
     try {
       if (input.id) {
@@ -282,7 +284,7 @@ export function DashboardConsole() {
         </p>
       </header>
 
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-auto mt-2">
+      <div className="mt-2 scrollbar-thin min-h-0 flex-1 overflow-auto">
         {hasNoDatasets ? (
           <Empty className="border p-6">
             <EmptyHeader>

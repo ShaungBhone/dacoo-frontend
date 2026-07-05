@@ -1,6 +1,10 @@
 "use client"
 
-import { SlidersHorizontalIcon, GaugeIcon, TriangleAlertIcon } from "lucide-react"
+import {
+  SlidersHorizontalIcon,
+  GaugeIcon,
+  TriangleAlertIcon,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { RailHeading, Slider } from "@/components/rag/primitives"
@@ -63,7 +67,7 @@ export function ConfigRail() {
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 px-3 py-3">
         <div className="flex items-center gap-2">
           <GaugeIcon className="size-3.5 text-muted-foreground" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Context budget
           </span>
           {contextBudget.isOver && (
@@ -92,7 +96,8 @@ export function ConfigRail() {
           <span className="font-mono text-xs font-semibold text-foreground">
             {contextBudget.usedTokens.toLocaleString()}
             <span className="font-normal text-muted-foreground">
-              {" "}/ {contextBudget.limitTokens.toLocaleString()} tok
+              {" "}
+              / {contextBudget.limitTokens.toLocaleString()} tok
             </span>
           </span>
           <span
@@ -117,7 +122,9 @@ export function ConfigRail() {
             { label: "Query", value: contextBudget.queryTokens },
           ].map((row) => (
             <div key={row.label} className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">{row.label}</span>
+              <span className="text-[11px] text-muted-foreground">
+                {row.label}
+              </span>
               <span className="font-mono text-[11px] text-foreground/70">
                 {row.value.toLocaleString()}
               </span>

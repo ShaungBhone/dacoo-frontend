@@ -1,6 +1,12 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react"
 import { en } from "@/lib/i18n/translations/en"
 import { my } from "@/lib/i18n/translations/my"
 import { setCookie } from "@/lib/cookies"
@@ -15,7 +21,9 @@ type LanguageContextType = {
   t: (key: string, variables?: Record<string, string | number>) => string
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined
+)
 
 function getNestedValue(obj: any, path: string): string | undefined {
   const parts = path.split(".")
@@ -50,7 +58,10 @@ export function LanguageProvider({
     }
   }, [locale])
 
-  const t = (key: string, variables?: Record<string, string | number>): string => {
+  const t = (
+    key: string,
+    variables?: Record<string, string | number>
+  ): string => {
     let template = getNestedValue(translations[locale], key)
 
     // Fallback to English dictionary if not found in current locale
@@ -65,7 +76,10 @@ export function LanguageProvider({
     if (variables) {
       let result = template
       for (const [varName, varValue] of Object.entries(variables)) {
-        result = result.replace(new RegExp(`{${varName}}`, "g"), String(varValue))
+        result = result.replace(
+          new RegExp(`{${varName}}`, "g"),
+          String(varValue)
+        )
       }
       return result
     }

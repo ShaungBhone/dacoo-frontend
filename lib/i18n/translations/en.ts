@@ -27,10 +27,12 @@ export const en = {
   },
   dashboard: {
     consoleTitle: "Retrieval testing console",
-    consoleDesc: "Run a query, inspect the generated answer, and trace every claim back to its source chunk.",
+    consoleDesc:
+      "Run a query, inspect the generated answer, and trace every claim back to its source chunk.",
     noDatasetsTitle: "No datasets yet",
     noDatasetsDesc: "Create one from the Datasets page before running a query.",
     noRelevantInfoTitle: "We do not provide this service.",
-    noRelevantInfoDesc: "We couldn't find any relevant information matching “{query}” in our knowledge base.",
+    noRelevantInfoDesc:
+      "We couldn't find any relevant information matching “{query}” in our knowledge base.",
   },
 }
