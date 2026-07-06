@@ -4,6 +4,7 @@ export const en = {
     playground: "Playground",
     agents: "Agents",
     datasets: "Datasets",
+    customers: "Customers",
     activity: "Activity",
     billing: "Billing",
     logout: "Log out",

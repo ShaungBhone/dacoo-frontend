@@ -4,6 +4,7 @@ export const my = {
     playground: "စမ်းသပ်ခန်း",
     agents: "အေးဂျင့်များ",
     datasets: "ဒေတာစုများ",
+    customers: "ဖောက်သည်များ",
     activity: "လှုပ်ရှားမှုများ",
     billing: "ငွေတောင်းခံလွှာ",
     logout: "ထွက်ရန်",
