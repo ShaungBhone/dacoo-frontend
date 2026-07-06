@@ -18,10 +18,33 @@ const LABELS: Record<string, string> = {
   // "/experiments": "Experiments",
   "/activity": "Activity",
   "/billing": "Billing",
+  "/customers": "Customers",
 }
 
 export function PageBreadcrumb() {
   const pathname = usePathname()
+
+  // Customer profile: /customers/[id] → Customers › Profile
+  if (pathname.startsWith("/customers/")) {
+    return (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbLink href="/dashboard">Dacoo Workspace</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator className="hidden md:block" />
+          <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbLink href="/customers">Customers</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator className="hidden md:block" />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Profile</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    )
+  }
+
   const label = LABELS[pathname] ?? "Dashboard"
 
   return (
