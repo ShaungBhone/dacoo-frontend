@@ -13,14 +13,13 @@ export type Plan = {
   is_active: boolean
 }
 
-export type SubscriptionStatus = "trialing" | "active" | "cancelled" | "expired"
+export type SubscriptionStatus = "active" | "cancelled" | "expired"
 
 export type Subscription = {
   id: number
   organization_id: number
   plan: Plan
   status: SubscriptionStatus
-  trial_ends_at: string | null
   starts_at: string | null
   ends_at: string | null
   cancelled_at: string | null

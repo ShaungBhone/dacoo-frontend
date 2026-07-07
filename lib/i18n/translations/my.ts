@@ -24,7 +24,7 @@ export const my = {
   },
   sidebar: {
     personalWorkspace: "ကိုယ်ပိုင် လုပ်ငန်းခွင်",
-    freePlan: "အခမဲ့",
+    basicPlan: "အခြေခံအစီအစဉ်",
   },
   dashboard: {
     consoleTitle: "ရှာဖွေထုတ်ယူမှု စမ်းသပ်ခြင်း ကွန်ဆိုးလ်",
