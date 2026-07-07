@@ -24,7 +24,7 @@ export const en = {
   },
   sidebar: {
     personalWorkspace: "Personal Workspace",
-    freePlan: "Free",
+    basicPlan: "Basic",
   },
   dashboard: {
     consoleTitle: "Retrieval testing console",

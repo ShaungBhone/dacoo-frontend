@@ -584,13 +584,6 @@ function SubscriptionStatusBadge({
       </Badge>
     )
   }
-  if (status === "trialing") {
-    return (
-      <Badge className="border-transparent bg-chart-1/20 text-chart-4 shadow-none hover:bg-chart-1/20">
-        Trialing
-      </Badge>
-    )
-  }
   if (status === "cancelled") {
     return (
       <Badge variant="destructive" className="shadow-none">
@@ -689,13 +682,11 @@ function CurrentPlanCard({
   }
 
   const dateLine =
-    subscription.status === "trialing" && subscription.trial_ends_at
-      ? `Trial ends ${formatDate(subscription.trial_ends_at)}`
-      : subscription.status === "active"
-        ? `Active since ${formatDate(subscription.starts_at)}`
-        : subscription.status === "cancelled"
-          ? `Cancelled ${formatDate(subscription.cancelled_at)}`
-          : `Ended ${formatDate(subscription.ends_at)}`
+    subscription.status === "active"
+      ? `Active since ${formatDate(subscription.starts_at)}`
+      : subscription.status === "cancelled"
+        ? `Cancelled ${formatDate(subscription.cancelled_at)}`
+        : `Ended ${formatDate(subscription.ends_at)}`
 
   return (
     <Card className="gap-0 border border-border py-0 shadow-none ring-0">

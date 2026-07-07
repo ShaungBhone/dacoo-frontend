@@ -30,16 +30,23 @@ function formatPrice(plan: Plan): string {
   return `$${amount}/${suffix}`
 }
 
-function summarizeLimits(plan: Plan): string {
-  const entries = Object.entries(plan.limits ?? {})
-  if (entries.length === 0) return `${plan.features.length} features included`
-  return entries
-    .slice(0, 3)
-    .map(([key, value]) => {
-      const label = key.replace(/_/g, " ")
-      return value < 0 ? `Unlimited ${label}` : `${value} ${label}`
-    })
-    .join(" · ")
+const KNOWN_FEATURE_LABELS: Record<string, string> = {
+  ai_auto_reply: "AI auto-reply",
+  ai_document_drafting: "AI document drafting",
+  "priority-support": "Priority support",
+}
+
+function formatCredits(plan: Plan): string | null {
+  const credits = plan.limits?.credits_per_cycle
+  if (credits === undefined) return null
+  if (credits < 0) return "Unlimited credits/mo"
+  return `${credits.toLocaleString()} credits/mo`
+}
+
+function featureLabels(plan: Plan): string[] {
+  return plan.features
+    .filter((key) => key in KNOWN_FEATURE_LABELS)
+    .map((key) => KNOWN_FEATURE_LABELS[key])
 }
 
 export function PlanPickerDialog({
@@ -157,7 +164,7 @@ export function PlanPickerDialog({
                     "w-full text-left"
                   )}
                 >
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
                         {plan.name}
@@ -168,9 +175,24 @@ export function PlanPickerDialog({
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {summarizeLimits(plan)}
-                    </span>
+                    {formatCredits(plan) && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {formatCredits(plan)}
+                      </span>
+                    )}
+                    {featureLabels(plan).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {featureLabels(plan).map((label) => (
+                          <Badge
+                            key={label}
+                            variant="outline"
+                            className="text-[10px] font-normal shadow-none"
+                          >
+                            {label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <span className="font-mono text-base font-bold text-foreground tabular-nums">
                     {formatPrice(plan)}

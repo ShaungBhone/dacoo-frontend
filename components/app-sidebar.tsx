@@ -36,23 +36,6 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: <GalleryVerticalEndIcon />,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: <AudioLinesIcon />,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: <TerminalIcon />,
-      plan: "Free",
-    },
-  ],
   navMain: [
     { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
     { title: "Agents", url: "/agents", icon: <BotIcon /> },
@@ -77,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           id: -1,
           name: t("sidebar.personalWorkspace"),
           logo: <GalleryVerticalEndIcon />,
-          plan: t("sidebar.freePlan"),
+          plan: t("sidebar.basicPlan"),
         },
       ]
     }
