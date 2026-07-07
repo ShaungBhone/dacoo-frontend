@@ -27,6 +27,7 @@ import {
   BotIcon,
   CreditCardIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react"
 
 // This is sample data.
@@ -44,6 +45,7 @@ const data = {
     { title: "Customers", url: "/customers", icon: <UsersIcon /> },
     { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
     { title: "Billing", url: "/billing", icon: <CreditCardIcon /> },
+    { title: "Wallet", url: "/wallet", icon: <WalletIcon /> },
   ],
 }
 
