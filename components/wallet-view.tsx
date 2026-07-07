@@ -83,13 +83,31 @@ const MODEL_COLORS = [
 ]
 
 function formatBalance(wallet: Wallet): string {
-  if (wallet.formatted_balance) return wallet.formatted_balance
   const num = parseFloat(wallet.balance)
   if (isNaN(num)) return wallet.balance
-  return num.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+
+  if (wallet.currency_code === CREDIT_CURRENCY) {
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
+
+  try {
+    return num.toLocaleString(undefined, {
+      style: "currency",
+      currency: wallet.currency_code,
+    })
+  } catch {
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
+}
+
+function currencyLabel(code: string): string {
+  return code === CREDIT_CURRENCY ? "Credit" : code
 }
 
 function formatDate(iso: string): string {
@@ -147,7 +165,7 @@ function CreditsWalletCard({
                 {formatBalance(wallet)}
               </span>
               <span className="text-sm text-muted-foreground">
-                {wallet.currency_code} available
+                {currencyLabel(wallet.currency_code)} available
               </span>
             </div>
           </div>
@@ -717,7 +735,7 @@ export function WalletView() {
                 <SelectContent>
                   {wallets.map((w) => (
                     <SelectItem key={w.id} value={w.id}>
-                      {w.currency_code}
+                      {currencyLabel(w.currency_code)}
                     </SelectItem>
                   ))}
                 </SelectContent>
