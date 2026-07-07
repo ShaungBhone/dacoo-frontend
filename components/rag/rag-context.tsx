@@ -12,10 +12,13 @@ import {
   fetchModelCatalog,
   fetchDocuments,
   fetchAgents,
+  fetchAiSettings,
+  updateAiSettings,
   type DatasetSummary,
   type ModelCatalog,
   type DocumentSummary,
   type AgentSummary,
+  type AiSettings,
 } from "@/components/rag/api"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 
@@ -58,7 +61,7 @@ type RagContextValue = {
   isLoadingAgents: boolean
   refreshAgents: () => Promise<void>
 
-  // Manion mobile default model — config only, no effect on playground model
+  // Manion mobile default model — persisted org-wide, no effect on playground model
   manionDefaultModel: string
   setManionDefaultModel: (v: string) => void
 }
@@ -91,8 +94,14 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingDatasets, setIsLoadingDatasets] = React.useState(true)
   const [datasetId, setDatasetId] = React.useState<string | null>(null)
 
-  // Manion mobile default model
-  const [manionDefaultModel, setManionDefaultModel] = React.useState("")
+  // Manion mobile default model — persisted org-wide via the ai-settings
+  // endpoint (used by SupportReplyAgent to pick which model answers
+  // conversations surfaced in the React Native app).
+  const [aiSettings, setAiSettings] = React.useState<AiSettings>({
+    auto_reply: false,
+    auto_assign: false,
+    default_model: null,
+  })
 
   // Dynamic Documents & Agents state
   const [documents, setDocuments] = React.useState<DocumentSummary[]>([])
@@ -115,6 +124,7 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
     setDatasets([])
     setDocuments([])
     setAgents([])
+    setAiSettings({ auto_reply: false, auto_assign: false, default_model: null })
   }
 
   // The embedding model is fixed per dataset (it must match how the dataset's
@@ -184,6 +194,33 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
     }
   }, [organization])
 
+  const refreshAiSettings = React.useCallback(async () => {
+    if (!organization) return
+    try {
+      const settings = await fetchAiSettings(organization.id)
+      setAiSettings(settings)
+    } catch (error) {
+      console.error("Failed to load AI settings:", error)
+    }
+  }, [organization])
+
+  // The picker/clear button work with a plain string ("" means "use the
+  // global default"), matching the pre-existing ConfigRail contract, while
+  // the backend stores/returns null for "unset".
+  const manionDefaultModel = aiSettings.default_model ?? ""
+
+  const setManionDefaultModel = React.useCallback(
+    (v: string) => {
+      if (!organization) return
+      const next: AiSettings = { ...aiSettings, default_model: v || null }
+      setAiSettings(next)
+      updateAiSettings(organization.id, next).catch((error) => {
+        console.error("Failed to update AI settings:", error)
+      })
+    },
+    [organization, aiSettings]
+  )
+
   React.useEffect(() => {
     refreshDatasets()
   }, [refreshDatasets])
@@ -199,6 +236,10 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     refreshAgents()
   }, [refreshAgents])
+
+  React.useEffect(() => {
+    refreshAiSettings()
+  }, [refreshAiSettings])
 
   // Compute a representative context budget using an average chunk-size
   // estimate and the default system prompt so the meter updates live before
