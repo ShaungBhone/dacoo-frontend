@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { MailIcon, LockIcon } from "lucide-react"
+import { MailIcon, LockIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
@@ -26,7 +26,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  InputGroupButton,
 } from "@/components/ui/input-group"
+import { Spinner } from "@/components/ui/spinner"
 
 export function LoginForm({
   className,
@@ -38,6 +40,7 @@ export function LoginForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
@@ -103,27 +106,29 @@ export function LoginForm({
                 )}
               </Field>
               <Field data-invalid={!!fieldErrors.password}>
-                <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
                 <InputGroup>
                   <InputGroupAddon>
                     <LockIcon />
                   </InputGroupAddon>
                   <InputGroupInput
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
                   />
+                  <InputGroupButton
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                    className="mr-1"
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </InputGroupButton>
                 </InputGroup>
                 {fieldErrors.password && (
                   <FieldError>{fieldErrors.password[0]}</FieldError>
@@ -131,7 +136,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? <Spinner /> : "Login"}
                 </Button>
               </Field>
             </FieldGroup>
@@ -139,8 +144,23 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        By clicking continue, you agree to our{" "}
+        <a
+          href="https://dacoo.co/en/legal/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a
+          href="https://dacoo.co/en/legal/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Privacy Policy
+        </a>
+        .
       </FieldDescription>
     </div>
   )

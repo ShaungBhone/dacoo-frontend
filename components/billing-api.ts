@@ -58,6 +58,7 @@ export type Wallet = {
   currency_code: string
   balance: string
   formatted_balance: string | null
+  low_balance: boolean | null
   created_at: string
   updated_at: string
 }

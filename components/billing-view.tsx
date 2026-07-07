@@ -13,10 +13,13 @@ import {
   CircleAlertIcon,
   PlusIcon,
   ArrowUpRightIcon,
+  ArrowDownLeftIcon,
   LayersIcon,
   RefreshCwIcon,
   FileTextIcon,
   BanIcon,
+  AlertTriangleIcon,
+  HistoryIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -28,6 +31,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import {
   Select,
   SelectContent,
@@ -63,6 +67,7 @@ import {
   fetchSubscription,
   fetchWallets,
   fetchUsageByModel,
+  fetchWalletTransactions,
   fetchInvoices,
   topUpCredits,
   downloadInvoicePdf,
@@ -70,6 +75,7 @@ import {
   type Subscription,
   type Wallet,
   type ModelUsage,
+  type WalletTransaction,
   type Invoice,
   type InvoiceStatus,
 } from "@/components/billing-api"
@@ -98,6 +104,15 @@ export function BillingView() {
   const [modelUsage, setModelUsage] = React.useState<ModelUsage[]>([])
   const [isLoadingUsage, setIsLoadingUsage] = React.useState(true)
   const [usageError, setUsageError] = React.useState<string | null>(null)
+
+  const [transactions, setTransactions] = React.useState<WalletTransaction[]>(
+    []
+  )
+  const [isLoadingTransactions, setIsLoadingTransactions] =
+    React.useState(true)
+  const [transactionsError, setTransactionsError] = React.useState<
+    string | null
+  >(null)
 
   const [invoices, setInvoices] = React.useState<Invoice[]>([])
   const [isLoadingInvoices, setIsLoadingInvoices] = React.useState(true)
@@ -203,6 +218,38 @@ export function BillingView() {
     loadUsage()
   }, [loadUsage])
 
+  const loadTransactions = React.useCallback(async () => {
+    if (!organization || isLoadingWallets) return
+
+    if (!creditWallet) {
+      setTransactions([])
+      setTransactionsError(null)
+      setIsLoadingTransactions(false)
+      return
+    }
+
+    setIsLoadingTransactions(true)
+    setTransactionsError(null)
+    try {
+      const list = await fetchWalletTransactions(
+        organization.id,
+        creditWallet.id
+      )
+      setTransactions(list)
+    } catch (err) {
+      setTransactionsError(
+        err instanceof ApiError ? err.message : "Failed to load recent activity."
+      )
+    } finally {
+      setIsLoadingTransactions(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organization, creditWallet?.id, isLoadingWallets])
+
+  React.useEffect(() => {
+    loadTransactions()
+  }, [loadTransactions])
+
   async function handleDownloadInvoice(invoice: Invoice) {
     if (!organization) return
     setDownloadingInvoiceId(invoice.id)
@@ -232,6 +279,24 @@ export function BillingView() {
             breakdown, and invoice history.
           </p>
         </header>
+
+        {/* ── Low balance warning ──────────────────────────────────────────  */}
+        {creditWallet?.low_balance && (
+          <Alert variant="destructive">
+            <AlertTriangleIcon />
+            <AlertTitle>Your credit balance is running low</AlertTitle>
+            <AlertDescription>
+              Top up now to avoid interruptions to your AI assistant&apos;s
+              replies.
+              <div className="pt-2.5">
+                <Button size="sm" onClick={() => setTopUpOpen(true)}>
+                  <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                  Purchase Credits
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* ── Current plan card ───────────────────────────────────────────  */}
         <CurrentPlanCard
@@ -396,6 +461,116 @@ export function BillingView() {
                   colorIndex={i}
                 />
               ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── Recent activity ─────────────────────────────────────────────── */}
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-foreground">
+              Recent Activity
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              {transactions.length}{" "}
+              {transactions.length === 1 ? "transaction" : "transactions"}
+            </span>
+          </div>
+
+          {isLoadingTransactions ? (
+            <Skeleton className="h-40 w-full rounded-xl" />
+          ) : transactionsError ? (
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
+              <CardContent className="p-0">
+                <Empty className="border-0 p-6">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CircleAlertIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Couldn&apos;t load recent activity</EmptyTitle>
+                    <EmptyDescription>{transactionsError}</EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={loadTransactions}
+                    >
+                      Retry
+                    </Button>
+                  </EmptyContent>
+                </Empty>
+              </CardContent>
+            </Card>
+          ) : transactions.length === 0 ? (
+            <Card className="gap-0 border border-border py-0 shadow-none ring-0">
+              <CardContent className="p-0">
+                <Empty className="border-0 p-6">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <HistoryIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>No activity yet</EmptyTitle>
+                    <EmptyDescription>
+                      Credit top-ups and AI usage will show up here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Type
+                    </TableHead>
+                    <TableHead className="hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
+                      Description
+                    </TableHead>
+                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Amount
+                    </TableHead>
+                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      Balance
+                    </TableHead>
+                    <TableHead className="hidden px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
+                      Date
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id} className="hover:bg-muted/20">
+                      <TableCell className="px-4 py-3">
+                        <TransactionTypeBadge type={tx.type} />
+                      </TableCell>
+                      <TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">
+                        {tx.description ?? tx.model ?? "—"}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "px-4 py-3 text-right font-mono text-sm font-medium tabular-nums",
+                          tx.type === "debit"
+                            ? "text-destructive"
+                            : "text-primary"
+                        )}
+                      >
+                        {tx.type === "debit" ? "-" : "+"}
+                        {Number(tx.amount).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right font-mono text-sm text-muted-foreground tabular-nums">
+                        {Number(tx.balance_after).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="hidden px-4 py-3 text-right text-sm text-muted-foreground sm:table-cell">
+                        {formatDate(tx.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </section>
@@ -783,6 +958,23 @@ function ModelCard({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function TransactionTypeBadge({ type }: { type: WalletTransaction["type"] }) {
+  if (type === "credit") {
+    return (
+      <Badge className="border-transparent bg-primary/10 text-primary shadow-none hover:bg-primary/10">
+        <ArrowDownLeftIcon data-icon="inline-start" aria-hidden="true" />
+        Credit
+      </Badge>
+    )
+  }
+  return (
+    <Badge variant="secondary" className="shadow-none">
+      <ArrowUpRightIcon data-icon="inline-start" aria-hidden="true" />
+      Debit
+    </Badge>
   )
 }
 

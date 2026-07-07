@@ -30,23 +30,11 @@ function formatPrice(plan: Plan): string {
   return `$${amount}/${suffix}`
 }
 
-const KNOWN_FEATURE_LABELS: Record<string, string> = {
-  ai_auto_reply: "AI auto-reply",
-  ai_document_drafting: "AI document drafting",
-  "priority-support": "Priority support",
-}
-
 function formatCredits(plan: Plan): string | null {
   const credits = plan.limits?.credits_per_cycle
   if (credits === undefined) return null
   if (credits < 0) return "Unlimited credits/mo"
   return `${credits.toLocaleString()} credits/mo`
-}
-
-function featureLabels(plan: Plan): string[] {
-  return plan.features
-    .filter((key) => key in KNOWN_FEATURE_LABELS)
-    .map((key) => KNOWN_FEATURE_LABELS[key])
 }
 
 export function PlanPickerDialog({
@@ -169,7 +157,7 @@ export function PlanPickerDialog({
                       <span className="text-sm font-semibold text-foreground">
                         {plan.name}
                       </span>
-                      {plan.id === currentPlanId && (
+                    {plan.id === currentPlanId && (
                         <Badge variant="secondary" className="shadow-none">
                           Current plan
                         </Badge>
@@ -179,19 +167,6 @@ export function PlanPickerDialog({
                       <span className="text-xs font-normal text-muted-foreground">
                         {formatCredits(plan)}
                       </span>
-                    )}
-                    {featureLabels(plan).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {featureLabels(plan).map((label) => (
-                          <Badge
-                            key={label}
-                            variant="outline"
-                            className="text-[10px] font-normal shadow-none"
-                          >
-                            {label}
-                          </Badge>
-                        ))}
-                      </div>
                     )}
                   </div>
                   <span className="font-mono text-base font-bold text-foreground tabular-nums">
