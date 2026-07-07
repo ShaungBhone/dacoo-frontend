@@ -7,6 +7,8 @@ export const my = {
     customers: "ဖောက်သည်များ",
     activity: "လှုပ်ရှားမှုများ",
     billing: "ငွေတောင်းခံလွှာ",
+    wallet: "ပိုက်ဆံအိတ်",
+    organization: "အဖွဲ့အစည်း",
     logout: "ထွက်ရန်",
     search: "ရှာဖွေရန်...",
     save: "သိမ်းဆည်းရန်",
