@@ -226,6 +226,32 @@ export async function deleteAgent(
   })
 }
 
+export type AiSettings = {
+  auto_reply: boolean
+  auto_assign: boolean
+  default_model: string | null
+}
+
+export async function fetchAiSettings(
+  organizationId: number
+): Promise<AiSettings> {
+  const res = await apiFetch<{ data: AiSettings }>(
+    `/api/v1/organizations/${organizationId}/ai-settings`
+  )
+  return res.data
+}
+
+export async function updateAiSettings(
+  organizationId: number,
+  input: AiSettings
+): Promise<AiSettings> {
+  const res = await apiFetch<{ data: AiSettings }>(
+    `/api/v1/organizations/${organizationId}/ai-settings`,
+    { method: "PUT", body: input }
+  )
+  return res.data
+}
+
 export type ActivityStatus = "success" | "warning" | "error"
 
 export type ActivityLogEntry = {
