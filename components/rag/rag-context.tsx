@@ -57,6 +57,10 @@ type RagContextValue = {
   agents: AgentSummary[]
   isLoadingAgents: boolean
   refreshAgents: () => Promise<void>
+
+  // Manion mobile default model — config only, no effect on playground model
+  manionDefaultModel: string
+  setManionDefaultModel: (v: string) => void
 }
 
 const RagContext = React.createContext<RagContextValue | null>(null)
@@ -86,6 +90,9 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
   const [datasets, setDatasets] = React.useState<DatasetSummary[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = React.useState(true)
   const [datasetId, setDatasetId] = React.useState<string | null>(null)
+
+  // Manion mobile default model
+  const [manionDefaultModel, setManionDefaultModel] = React.useState("")
 
   // Dynamic Documents & Agents state
   const [documents, setDocuments] = React.useState<DocumentSummary[]>([])
@@ -238,6 +245,8 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       agents,
       isLoadingAgents,
       refreshAgents,
+      manionDefaultModel,
+      setManionDefaultModel,
     }),
     [
       genModel,
@@ -261,6 +270,8 @@ export function RagProvider({ children }: { children: React.ReactNode }) {
       agents,
       isLoadingAgents,
       refreshAgents,
+      manionDefaultModel,
+      setManionDefaultModel,
     ]
   )
 
