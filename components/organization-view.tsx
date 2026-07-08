@@ -130,7 +130,7 @@ function GeneralSection({
       <CardHeader className="border-b border-border">
         <div className="flex items-center gap-2">
           <BuildingIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-          <CardTitle className="text-base">General</CardTitle>
+          <CardTitle className="text-base text-balance">General</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-5 p-6">
@@ -138,10 +138,12 @@ function GeneralSection({
           <Label htmlFor="org-name">Organization name</Label>
           <Input
             id="org-name"
+            name="organization-name"
+            autoComplete="organization"
             value={nameValue}
             onChange={(e) => setNameValue(e.target.value)}
             disabled={!canEdit || saving}
-            placeholder="Acme Inc."
+            placeholder="e.g., Acme Inc.…"
           />
           <p className="text-xs text-muted-foreground">
             Displayed across the workspace and in invitations.
@@ -154,6 +156,9 @@ function GeneralSection({
             <span className="pl-3 text-sm text-muted-foreground">dacoo.app/</span>
             <Input
               id="org-slug"
+              name="organization-slug"
+              autoComplete="off"
+              spellCheck={false}
               value={slugValue}
               onChange={(e) =>
                 setSlugValue(
@@ -165,7 +170,7 @@ function GeneralSection({
               }
               disabled={!canEdit || saving}
               className="border-0 shadow-none focus-visible:ring-0"
-              placeholder="acme"
+              placeholder="e.g., acme…"
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -176,7 +181,7 @@ function GeneralSection({
         {saved && (
           <Alert className="border-primary/30 bg-primary/5">
             <CheckCircle2Icon className="size-4 text-primary" aria-hidden="true" />
-            <AlertTitle>Saved</AlertTitle>
+            <AlertTitle className="text-balance">Saved</AlertTitle>
             <AlertDescription>
               Your organization settings have been updated.
             </AlertDescription>
@@ -189,7 +194,7 @@ function GeneralSection({
               {saving ? (
                 <>
                   <Spinner className="size-4" />
-                  Saving
+                  Saving…
                 </>
               ) : (
                 "Save changes"
@@ -237,7 +242,7 @@ function InviteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite a member</DialogTitle>
+          <DialogTitle className="text-balance">Invite a member</DialogTitle>
           <DialogDescription>
             Send an invitation to join this organization.
           </DialogDescription>
@@ -248,9 +253,12 @@ function InviteDialog({
             <Input
               id="invite-email"
               type="email"
+              name="email"
+              autoComplete="email"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="teammate@company.com"
+              placeholder="e.g., teammate@company.com…"
             />
           </div>
           <div className="grid gap-2">
@@ -274,11 +282,11 @@ function InviteDialog({
             {submitting ? (
               <>
                 <Spinner className="size-4" />
-                Sending
+                Sending…
               </>
             ) : (
               <>
-                <MailIcon className="size-4" />
+                <MailIcon className="size-4" aria-hidden="true" />
                 Send invite
               </>
             )}
@@ -311,7 +319,7 @@ function MembersSection({
       <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border">
         <div className="flex items-center gap-2">
           <UsersIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-          <CardTitle className="text-base">
+          <CardTitle className="text-base text-balance">
             Members
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {members.length}
@@ -320,7 +328,7 @@ function MembersSection({
         </div>
         {canManage && (
           <Button size="sm" onClick={() => setInviteOpen(true)}>
-            <PlusIcon className="size-4" />
+            <PlusIcon className="size-4" aria-hidden="true" />
             Invite
           </Button>
         )}
@@ -330,9 +338,9 @@ function MembersSection({
           <Empty className="py-12">
             <EmptyHeader>
               <EmptyMedia variant="icon">
-                <UsersIcon className="size-5" />
+                <UsersIcon className="size-5" aria-hidden="true" />
               </EmptyMedia>
-              <EmptyTitle>No members yet</EmptyTitle>
+              <EmptyTitle className="text-balance">No members yet</EmptyTitle>
               <EmptyDescription>
                 Invite teammates to collaborate in this organization.
               </EmptyDescription>
@@ -340,7 +348,7 @@ function MembersSection({
             {canManage && (
               <EmptyContent>
                 <Button size="sm" onClick={() => setInviteOpen(true)}>
-                  <PlusIcon className="size-4" />
+                  <PlusIcon className="size-4" aria-hidden="true" />
                   Invite member
                 </Button>
               </EmptyContent>
@@ -427,7 +435,7 @@ function MembersSection({
                             variant="destructive"
                             onClick={() => onRemove(member.id)}
                           >
-                            <Trash2Icon className="size-4" />
+                            <Trash2Icon className="size-4" aria-hidden="true" />
                             Remove member
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -460,7 +468,7 @@ function BillingSummarySection() {
       <CardHeader className="border-b border-border">
         <div className="flex items-center gap-2">
           <CreditCardIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-          <CardTitle className="text-base">Billing</CardTitle>
+          <CardTitle className="text-base text-balance">Billing</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -478,7 +486,7 @@ function BillingSummarySection() {
         <Button asChild variant="outline">
           <Link href="/billing">
             View billing
-            <ArrowRightIcon className="size-4" />
+            <ArrowRightIcon className="size-4" aria-hidden="true" />
           </Link>
         </Button>
       </CardContent>
@@ -517,7 +525,7 @@ function DangerZoneSection({
       <CardHeader className="border-b border-destructive/20">
         <div className="flex items-center gap-2">
           <TriangleAlertIcon className="size-4 text-destructive" aria-hidden="true" />
-          <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
+          <CardTitle className="text-base text-destructive text-balance">Danger zone</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-0 p-0">
@@ -525,11 +533,11 @@ function DangerZoneSection({
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium">Leave organization</span>
             <p className="text-sm text-muted-foreground">
-              You will lose access to this organization&apos;s resources.
+              You will lose access to this organization’s resources.
             </p>
           </div>
           <Button variant="outline" onClick={() => setLeaveOpen(true)}>
-            <LogOutIcon className="size-4" />
+            <LogOutIcon className="size-4" aria-hidden="true" />
             Leave
           </Button>
         </div>
@@ -545,7 +553,7 @@ function DangerZoneSection({
                 </p>
               </div>
               <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2Icon className="size-4" />
+                <Trash2Icon className="size-4" aria-hidden="true" />
                 Delete
               </Button>
             </div>
@@ -557,9 +565,9 @@ function DangerZoneSection({
       <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Leave organization?</DialogTitle>
+            <DialogTitle className="text-balance">Leave organization?</DialogTitle>
             <DialogDescription>
-              You&apos;ll be removed from {organizationName} and lose access to
+              You’ll be removed from {organizationName} and lose access to
               its resources. You can rejoin if invited again.
             </DialogDescription>
           </DialogHeader>
@@ -575,7 +583,7 @@ function DangerZoneSection({
               {working ? (
                 <>
                   <Spinner className="size-4" />
-                  Leaving
+                  Leaving…
                 </>
               ) : (
                 "Leave organization"
@@ -589,7 +597,7 @@ function DangerZoneSection({
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete organization?</DialogTitle>
+            <DialogTitle className="text-balance">Delete organization?</DialogTitle>
             <DialogDescription>
               This action cannot be undone. This will permanently delete{" "}
               {organizationName} and all associated data.
@@ -602,9 +610,11 @@ function DangerZoneSection({
             </Label>
             <Input
               id="confirm-delete"
+              name="confirm"
+              autoComplete="off"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={organizationName}
+              placeholder={`e.g., ${organizationName}…`}
             />
           </div>
           <DialogFooter>
@@ -619,7 +629,7 @@ function DangerZoneSection({
               {working ? (
                 <>
                   <Spinner className="size-4" />
-                  Deleting
+                  Deleting…
                 </>
               ) : (
                 "Delete organization"
@@ -685,66 +695,72 @@ export function OrganizationView() {
 
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     )
   }
 
   if (!activeOrganization) {
     return (
-      <div className="mx-auto w-full max-w-3xl p-4 md:p-6">
-        <Empty className="py-16">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <BuildingIcon className="size-5" />
-            </EmptyMedia>
-            <EmptyTitle>No organization selected</EmptyTitle>
-            <EmptyDescription>
-              Select or create an organization from the workspace switcher to
-              manage its settings.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+          <Empty className="py-16">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <BuildingIcon className="size-5" aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle className="text-balance">No organization selected</EmptyTitle>
+              <EmptyDescription>
+                Select or create an organization from the workspace switcher to
+                manage its settings.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          Organization settings
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Manage {activeOrganization.name}&apos;s profile, members, and
-          preferences.
-        </p>
-      </header>
+    <div className="flex flex-1 flex-col overflow-auto bg-background text-foreground">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+        <header className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight text-balance">
+            Organization settings
+          </h1>
+          <p className="text-sm text-pretty text-muted-foreground">
+            Manage {activeOrganization.name}’s profile, members, and
+            preferences.
+          </p>
+        </header>
 
-      <GeneralSection
-        name={activeOrganization.name}
-        slug={activeOrganization.slug}
-        canEdit={canManage}
-      />
+        <GeneralSection
+          name={activeOrganization.name}
+          slug={activeOrganization.slug}
+          canEdit={canManage}
+        />
 
-      <MembersSection
-        members={members}
-        currentUserId={String(user.id)}
-        canManage={canManage}
-        onInvite={handleInvite}
-        onRoleChange={handleRoleChange}
-        onRemove={handleRemove}
-      />
+        <MembersSection
+          members={members}
+          currentUserId={String(user.id)}
+          canManage={canManage}
+          onInvite={handleInvite}
+          onRoleChange={handleRoleChange}
+          onRemove={handleRemove}
+        />
 
-      <BillingSummarySection />
+        <BillingSummarySection />
 
-      <DangerZoneSection
-        organizationName={activeOrganization.name}
-        isOwner={isOwner}
-      />
+        <DangerZoneSection
+          organizationName={activeOrganization.name}
+          isOwner={isOwner}
+        />
+      </div>
     </div>
   )
 }
