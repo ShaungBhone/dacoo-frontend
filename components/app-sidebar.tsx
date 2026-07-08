@@ -34,16 +34,35 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  navMain: [
-    { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
-    { title: "Agents", url: "/agents", icon: <BotIcon /> },
-    { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
-    // { title: "Experiments", url: "/experiments", icon: <FlaskConicalIcon /> },
-    { title: "Customers", url: "/customers", icon: <UsersIcon /> },
-    { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
-    { title: "Billing", url: "/billing", icon: <CreditCardIcon /> },
-    { title: "Wallet", url: "/wallet", icon: <WalletIcon /> },
-    { title: "Organization", url: "/organization", icon: <Building2Icon /> },
+  navGroups: [
+    {
+      group: "Tools",
+      items: [
+        { title: "Playground", url: "/dashboard", icon: <TerminalSquareIcon /> },
+        { title: "Agents", url: "/agents", icon: <BotIcon /> },
+        { title: "Datasets", url: "/datasets", icon: <DatabaseIcon /> },
+      ],
+    },
+    {
+      group: "Management",
+      items: [
+        { title: "Customers", url: "/customers", icon: <UsersIcon /> },
+        { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
+      ],
+    },
+    {
+      group: "Finance",
+      items: [
+        { title: "Billing", url: "/billing", icon: <CreditCardIcon /> },
+        { title: "Wallet", url: "/wallet", icon: <WalletIcon /> },
+      ],
+    },
+    {
+      group: "Settings",
+      items: [
+        { title: "Organization", url: "/organization", icon: <Building2Icon /> },
+      ],
+    },
   ],
 }
 
@@ -84,10 +103,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [user])
 
-  const translatedNavMain = React.useMemo(() => {
-    return data.navMain.map((item) => ({
-      ...item,
-      title: t(`common.${item.title.toLowerCase()}`),
+  const translatedNavGroups = React.useMemo(() => {
+    return data.navGroups.map((group) => ({
+      group: group.group,
+      items: group.items.map((item) => ({
+        ...item,
+        title: t(`common.${item.title.toLowerCase()}`),
+      })),
     }))
   }, [t])
 
@@ -101,7 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <Navigation navItems={translatedNavMain} user={sidebarUser} />
+        <Navigation navGroups={translatedNavGroups} user={sidebarUser} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
