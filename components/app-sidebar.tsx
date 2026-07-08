@@ -2,8 +2,7 @@
 
 import * as React from "react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { Navigation } from "@/components/navigation"
 import { TeamSwitcher } from "@/components/team-switcher"
 import { useAuth } from "@/contexts/auth-context"
 import { useOrganization } from "@/contexts/organization-context"
@@ -11,7 +10,6 @@ import { useTranslation } from "@/contexts/language-context"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
@@ -20,9 +18,7 @@ import {
   AudioLinesIcon,
   TerminalIcon,
   TerminalSquareIcon,
-  BookOpenIcon,
   DatabaseIcon,
-  FlaskConicalIcon,
   ActivityIcon,
   BotIcon,
   CreditCardIcon,
@@ -105,11 +101,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={translatedNavMain} />
+        <Navigation navItems={translatedNavMain} user={sidebarUser} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={sidebarUser} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
