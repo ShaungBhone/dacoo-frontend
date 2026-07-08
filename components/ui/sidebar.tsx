@@ -701,5 +701,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  SIDEBAR_WIDTH_MOBILE,
   useSidebar,
 }

@@ -8,9 +8,17 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarSeparator,
+  SIDEBAR_WIDTH_MOBILE,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { ResizablePanel } from "@/components/ui/resizable"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 import { useRightSidebar } from "@/components/right-sidebar-provider"
 import { ChunksList } from "@/components/rag/chunks-list"
 import { ConfigRail } from "@/components/rag/config-rail"
@@ -41,9 +49,63 @@ export function RightSidebarTrigger({
   )
 }
 
-export function RightSidebar() {
-  const { panelRef, _onPanelCollapse, _onPanelExpand } = useRightSidebar()
+function RightSidebarBody() {
   const { runResult } = useRag()
+
+  return (
+    <>
+      <SidebarContent className="gap-5 px-3 py-4">
+        <ConfigRail />
+        {runResult && (
+          <>
+            <SidebarSeparator className="mx-0" />
+            <ChunksList chunks={runResult.chunks} />
+          </>
+        )}
+        <SidebarSeparator className="mx-0" />
+        <KnowledgeBase />
+      </SidebarContent>
+      <SidebarFooter />
+    </>
+  )
+}
+
+export function RightSidebar() {
+  const {
+    panelRef,
+    isMobile,
+    openMobile,
+    setOpenMobile,
+    _onPanelCollapse,
+    _onPanelExpand,
+  } = useRightSidebar()
+
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground"
+          style={
+            {
+              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+            } as React.CSSProperties
+          }
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Right Sidebar</SheetTitle>
+            <SheetDescription>
+              Displays the mobile right sidebar.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex h-full w-full flex-col">
+            <RightSidebarBody />
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   return (
     <ResizablePanel
@@ -66,18 +128,7 @@ export function RightSidebar() {
       }
     >
       <Sidebar side="right" collapsible="none" className="h-full">
-        <SidebarContent className="gap-5 px-3 py-4">
-          <ConfigRail />
-          {runResult && (
-            <>
-              <SidebarSeparator className="mx-0" />
-              <ChunksList chunks={runResult.chunks} />
-            </>
-          )}
-          <SidebarSeparator className="mx-0" />
-          <KnowledgeBase />
-        </SidebarContent>
-        <SidebarFooter />
+        <RightSidebarBody />
       </Sidebar>
     </ResizablePanel>
   )
