@@ -1,5 +1,7 @@
-import { OrganizationView } from "@/components/organization-view"
+import { notFound } from "next/navigation"
+// import { OrganizationView } from "@/components/organization-view"
 
 export default function OrganizationPage() {
-  return <OrganizationView />
+  notFound()
+  // return <OrganizationView />
 }

@@ -60,7 +60,7 @@ const data = {
     {
       group: "Settings",
       items: [
-        { title: "Organization", url: "/organization", icon: <Building2Icon /> },
+        // { title: "Organization", url: "/organization", icon: <Building2Icon /> },
       ],
     },
   ],
