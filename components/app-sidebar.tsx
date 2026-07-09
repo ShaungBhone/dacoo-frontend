@@ -55,6 +55,7 @@ const data = {
       items: [
         { title: "Billing", url: "/billing", icon: <CreditCardIcon /> },
         { title: "Wallet", url: "/wallet", icon: <WalletIcon /> },
+        { title: "Cards", url: "/cards", icon: <CreditCardIcon /> },
       ],
     },
     {
