@@ -8,6 +8,7 @@ export const my = {
     activity: "လှုပ်ရှားမှုများ",
     billing: "ငွေတောင်းခံလွှာ",
     wallet: "ပိုက်ဆံအိတ်",
+    cards: "ကတ်များ",
     organization: "အဖွဲ့အစည်း",
     logout: "ထွက်ရန်",
     search: "ရှာဖွေရန်...",

@@ -8,6 +8,7 @@ export const en = {
     activity: "Activity",
     billing: "Billing",
     wallet: "Wallet",
+    cards: "Cards",
     organization: "Organization",
     logout: "Log out",
     search: "Search...",
