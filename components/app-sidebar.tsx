@@ -25,6 +25,7 @@ import {
   UsersIcon,
   WalletIcon,
   Building2Icon,
+  MessageSquareIcon,
 } from "lucide-react"
 
 // This is sample data.
@@ -47,6 +48,7 @@ const data = {
       group: "Management",
       items: [
         { title: "Customers", url: "/customers", icon: <UsersIcon /> },
+        { title: "Inbox", url: "/inbox", icon: <MessageSquareIcon /> },
         { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
       ],
     },

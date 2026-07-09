@@ -12,6 +12,8 @@ import { CustomerHeader } from "@/components/customers/customer-header"
 import { InsightsPanel } from "@/components/customers/insights-panel"
 import { SaleHistoryPanel } from "@/components/customers/sale-history-panel"
 import { ConversationsPanel } from "@/components/customers/conversations-panel"
+import { CustomerInboxPanel } from "@/components/helpdesk/customer-inbox-panel"
+import { HELPDESK_TICKETS } from "@/components/helpdesk/data"
 
 export function CustomerProfileView() {
   const customer = CUSTOMER
@@ -54,6 +56,7 @@ export function CustomerProfileView() {
           {/* Side column */}
           <div className="flex flex-col gap-6">
             <ConversationsPanel conversations={customer.conversations} />
+            <CustomerInboxPanel tickets={HELPDESK_TICKETS.filter((t) => t.customerId === customer.id)} />
           </div>
         </div>
       </div>
