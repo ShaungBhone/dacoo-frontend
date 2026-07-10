@@ -2,499 +2,634 @@
 
 import * as React from "react"
 import {
-  CheckIcon,
-  XIcon,
-  WifiIcon,
-  UploadCloudIcon,
+  AlertCircleIcon,
   CheckCircle2Icon,
+  CheckIcon,
   ChevronLeftIcon,
+  UploadCloudIcon,
+  XIcon,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Image from "next/image"
 
-/* -------------------------------------------------------------------------- */
-/*                                  Types                                      */
-/* -------------------------------------------------------------------------- */
+import {
+  createCardOrder,
+  fetchCardOrderCatalog,
+  type CardDesign,
+  type CardOrder,
+  type CardOrderCatalog,
+  type CardPaymentMethod,
+  type CardPurpose,
+} from "@/components/card-order-api"
+import { AppLogo } from "@/components/app-logo"
+import { PaymentCardPreview } from "@/components/payment-card"
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  Stepper,
+  StepperIndicator,
+  StepperItem,
+  StepperNav,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from "@/components/ui/stepper"
+import { useActiveOrganization } from "@/hooks/use-active-organization"
+import { ApiError } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 type Step = "card" | "purpose" | "payment" | "verification"
 
-const STEPS: { id: Step; label: string }[] = [
+const PREMIUM_STEPS: { id: Step; label: string }[] = [
   { id: "card", label: "Card" },
   { id: "purpose", label: "Purpose" },
   { id: "payment", label: "Payment" },
   { id: "verification", label: "Verification" },
 ]
 
-type PaymentMethod = "aya_pay" | "kbz_pay" | "wave_pay" | "cb_pay"
+const MIN_INITIAL_BALANCE = 10_000
+const MAX_INITIAL_BALANCE = 10_000_000
 
-const PAYMENT_METHODS: { id: PaymentMethod; label: string; color: string }[] = [
-  { id: "aya_pay", label: "AYA Pay", color: "#E31837" },
-  { id: "kbz_pay", label: "KBZ Pay", color: "#0056A3" },
-  { id: "wave_pay", label: "Wave Pay", color: "#F7941D" },
-  { id: "cb_pay", label: "CB Pay", color: "#00833E" },
-]
+function formatPrice(design: CardDesign): string {
+  if (design.tier === "standard" || design.price.amount === 0) return "Free"
+  return `${design.price.amount.toLocaleString()} ${design.price.currency}`
+}
 
-const PURPOSES = [
-  { id: "expense", label: "Daily Expenses", description: "For everyday purchases and bills" },
-  { id: "stock", label: "Buying Stock", description: "For stock market & investments" },
-  { id: "receiving", label: "Receiving Money", description: "To receive payments & transfers" },
-  { id: "travel", label: "Travel & Abroad", description: "For international travel use" },
-  { id: "business", label: "Business Use", description: "For business transactions" },
-  { id: "savings", label: "Savings", description: "Linked to a savings goal" },
-]
-
-/* -------------------------------------------------------------------------- */
-/*                            Stepper Header                                   */
-/* -------------------------------------------------------------------------- */
-
-function StepperHeader({
-  current,
-  onClose,
-}: {
-  current: Step
-  onClose: () => void
-}) {
-  const currentIdx = STEPS.findIndex((s) => s.id === current)
-
+function ErrorMessage({ message }: { message: string }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-      {/* Steps */}
-      <nav className="flex items-center gap-0" aria-label="Order progress">
-        {STEPS.map((step, idx) => {
-          const isDone = idx < currentIdx
-          const isActive = idx === currentIdx
-          return (
-            <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className={cn(
-                    "size-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                    isDone
-                      ? "bg-primary text-primary-foreground"
-                      : isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "border-2 border-muted-foreground/30 text-muted-foreground/50 bg-transparent"
-                  )}
-                >
-                  {isDone ? (
-                    <CheckIcon className="size-3.5" strokeWidth={3} />
-                  ) : (
-                    <span className="text-[10px]">{idx + 1}</span>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-xs font-medium whitespace-nowrap",
-                    isActive
-                      ? "text-primary"
-                      : isDone
-                        ? "text-foreground"
-                        : "text-muted-foreground/50"
-                  )}
-                >
-                  {step.label}
-                </span>
-              </div>
-              {idx < STEPS.length - 1 && (
-                <div
-                  className={cn(
-                    "h-px w-16 mx-1 mt-[-12px] transition-colors",
-                    idx < currentIdx ? "bg-primary" : "bg-muted-foreground/20"
-                  )}
-                />
-              )}
-            </React.Fragment>
-          )
-        })}
-      </nav>
-
-      {/* Close */}
-      <button
-        onClick={onClose}
-        className="size-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        aria-label="Close"
-      >
-        <XIcon className="size-4" />
-      </button>
+    <div className="flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">
+      <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
+      <p>{message}</p>
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*                         Mini Card Preview                                   */
-/* -------------------------------------------------------------------------- */
-
-function MiniCard({
-  variant,
-  selected,
-  onClick,
-  name,
+function StepperHeader({
+  current,
+  steps,
+  onClose,
 }: {
-  variant: "dark" | "light"
-  selected: boolean
-  onClick: () => void
-  name: string
+  current: Step
+  steps: { id: Step; label: string }[]
+  onClose: () => void
 }) {
-  const isDark = variant === "dark"
+  const definitions = React.useMemo(
+    () => steps.map((step) => ({ id: step.id, title: step.label })),
+    [steps]
+  )
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative rounded-2xl p-4 w-full transition-all overflow-hidden",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-        isDark ? "bg-[#1a1f2e] text-white" : "bg-[#e8eaed] text-[#1a1f2e]",
-        selected ? "ring-2 ring-primary ring-offset-2" : "ring-1 ring-transparent"
-      )}
-      style={{ aspectRatio: "1.6 / 1" }}
-      aria-pressed={selected}
-    >
-      {/* Select indicator */}
-      <div
-        className={cn(
-          "absolute top-3 right-3 size-5 rounded-full border-2 flex items-center justify-center transition-all",
-          selected
-            ? "bg-primary border-primary"
-            : isDark
-              ? "border-white/40"
-              : "border-[#1a1f2e]/40"
-        )}
-      >
-        {selected && <CheckIcon className="size-3 text-white" strokeWidth={3} />}
+    <div className="grid grid-cols-3 items-center border-b border-border bg-background px-6 py-4">
+      <div className="flex justify-start">
+        <AppLogo />
       </div>
-
-      {/* Chip + Wifi */}
-      <div className="flex items-center gap-1.5">
-        <div className="w-6 h-4 rounded bg-amber-500 grid grid-cols-2 gap-0.5 p-0.5">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-[1px] bg-amber-700/60" />
-          ))}
-        </div>
-        <WifiIcon className={cn("size-3 rotate-90", isDark ? "text-white/50" : "text-black/50")} />
+      <div className="flex w-full justify-center">
+        <Stepper
+          steps={definitions}
+          value={current}
+          indicators={{
+            completed: (
+              <CheckIcon
+                className="size-3.5 text-primary-foreground"
+                strokeWidth={3}
+              />
+            ),
+          }}
+          className="flex w-auto items-center justify-center"
+        >
+          <StepperNav className="flex items-center gap-0">
+            {definitions.map((step, index) => (
+              <StepperItem
+                key={step.id}
+                stepId={step.id}
+                disabled
+                className="flex items-center"
+              >
+                <StepperTrigger className="pointer-events-none cursor-default gap-2 px-1">
+                  <StepperIndicator className="size-6 rounded-full text-xs font-semibold">
+                    {index + 1}
+                  </StepperIndicator>
+                  <StepperTitle className="hidden text-xs font-medium whitespace-nowrap sm:block">
+                    {step.title}
+                  </StepperTitle>
+                </StepperTrigger>
+                {index < definitions.length - 1 && (
+                  <StepperSeparator className="mx-2 h-px w-12 bg-muted transition-colors duration-300 group-data-[state=completed]/step:bg-primary" />
+                )}
+              </StepperItem>
+            ))}
+          </StepperNav>
+        </Stepper>
       </div>
-
-      {/* Bottom */}
-      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-        <div className="flex flex-col gap-0.5">
-          <span className={cn("font-mono text-[10px] tracking-widest", isDark ? "text-white/80" : "text-black/80")}>
-            0000 0000 0000 0000
-          </span>
-          <span className={cn("text-[9px] font-semibold uppercase tracking-wider", isDark ? "text-white/70" : "text-black/70")}>
-            {name}
-          </span>
-        </div>
-        <div className="flex -space-x-1.5">
-          <div className="size-5 rounded-full bg-red-500 opacity-90" />
-          <div className="size-5 rounded-full bg-orange-400 opacity-80" />
-        </div>
+      <div className="flex justify-end">
+        <Button
+          onClick={onClose}
+          variant="ghost"
+          size="icon"
+          aria-label="Close"
+        >
+          <XIcon data-icon="inline-start" />
+        </Button>
       </div>
-    </button>
+    </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*                               Step 1: Card                                  */
-/* -------------------------------------------------------------------------- */
+function SelectableCard({
+  design,
+  selected,
+}: {
+  design: CardDesign
+  selected: boolean
+}) {
+  return (
+    <ToggleGroupItem
+      value={design.id}
+      aria-label={`Select ${design.name}`}
+      className={cn(
+        "h-auto w-fit flex-col items-start gap-2 rounded-2xl p-2 text-left whitespace-normal",
+        selected
+          ? "bg-primary/5 ring-2 ring-primary"
+          : "ring-1 ring-border hover:ring-primary/40"
+      )}
+    >
+      <PaymentCardPreview theme={design.theme} />
+      <span className="flex w-full items-center justify-between gap-3 px-1 pb-0.5">
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-foreground">
+            {design.name}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {formatPrice(design)}
+          </span>
+        </span>
+        <span
+          className={cn(
+            "flex size-5 shrink-0 items-center justify-center rounded-full border-2",
+            selected
+              ? "border-primary bg-primary"
+              : "border-muted-foreground/40"
+          )}
+        >
+          {selected && (
+            <CheckIcon
+              className="size-3 text-primary-foreground"
+              strokeWidth={3}
+            />
+          )}
+        </span>
+      </span>
+    </ToggleGroupItem>
+  )
+}
 
 function CardStep({
-  selectedStyle,
+  catalog,
+  selected,
   onSelect,
   onContinue,
   onCancel,
 }: {
-  selectedStyle: "dark" | "light"
-  onSelect: (v: "dark" | "light") => void
+  catalog: CardOrderCatalog
+  selected: CardDesign | null
+  onSelect: (design: CardDesign) => void
   onContinue: () => void
   onCancel: () => void
 }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="text-center">
-        <h2 className="text-xl font-bold text-foreground">Card details</h2>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-foreground">Select card style</p>
-        <div className="grid grid-cols-2 gap-3">
-          <MiniCard variant="dark" selected={selectedStyle === "dark"} onClick={() => onSelect("dark")} name="YOUR NAME" />
-          <MiniCard variant="light" selected={selectedStyle === "light"} onClick={() => onSelect("light")} name="YOUR NAME" />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 pt-2">
-        <Button onClick={onContinue} className="w-full h-11 text-sm font-semibold">
-          Continue
-        </Button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <XIcon className="size-3.5" />
-          Cancel
-        </button>
-      </div>
-    </div>
+  const standard = catalog.designs.filter(
+    (design) => design.tier === "standard"
   )
-}
+  const premium = catalog.designs.filter((design) => design.tier === "premium")
 
-/* -------------------------------------------------------------------------- */
-/*                             Step 2: Purpose                                 */
-/* -------------------------------------------------------------------------- */
-
-function PurposeStep({
-  selected,
-  onSelect,
-  onContinue,
-  onBack,
-}: {
-  selected: string | null
-  onSelect: (id: string) => void
-  onContinue: () => void
-  onBack: () => void
-}) {
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-xl font-bold text-foreground">{"What's your purpose?"}</h2>
+        <h2 className="text-xl font-bold text-foreground">Choose your card</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tell us how you plan to use this card
+          Standard cards are free. Premium cards are priced by design.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {PURPOSES.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onSelect(p.id)}
-            className={cn(
-              "text-left px-4 py-3.5 rounded-xl border transition-all",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-              selected === p.id
-                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                : "border-border hover:border-muted-foreground/40 bg-background"
-            )}
+      {standard.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Standard cards
+            </p>
+            <p className="text-xs text-muted-foreground">No card fee</p>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={selected?.tier === "standard" ? selected.id : ""}
+            onValueChange={(value) => {
+              const design = standard.find((item) => item.id === value)
+              if (design) onSelect(design)
+            }}
+            className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2"
           >
-            <p className="text-sm font-semibold text-foreground">{p.label}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-3 pt-2">
-        <Button onClick={onContinue} disabled={!selected} className="w-full h-11 text-sm font-semibold">
-          Continue
-        </Button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeftIcon className="size-3.5" />
-          Go back
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*                            Step 3: Payment                                  */
-/* -------------------------------------------------------------------------- */
-
-function PaymentStep({
-  amount,
-  onAmountChange,
-  selectedMethod,
-  onSelectMethod,
-  onContinue,
-  onBack,
-}: {
-  amount: string
-  onAmountChange: (v: string) => void
-  selectedMethod: PaymentMethod | null
-  onSelectMethod: (m: PaymentMethod) => void
-  onContinue: () => void
-  onBack: () => void
-}) {
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="text-center">
-        <h2 className="text-xl font-bold text-foreground">How would you like to pay?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Enter the card pricing amount and choose a payment method</p>
-      </div>
-
-      {/* Amount Input */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="card-amount" className="text-sm font-medium">
-          Card pricing amount (MMK)
-        </Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">K</span>
-          <Input
-            id="card-amount"
-            type="number"
-            min="0"
-            placeholder="0"
-            value={amount}
-            onChange={(e) => onAmountChange(e.target.value)}
-            className="pl-7 font-mono text-lg h-12"
-          />
+            {standard.map((design) => (
+              <SelectableCard
+                key={design.id}
+                design={design}
+                selected={selected?.id === design.id}
+              />
+            ))}
+          </ToggleGroup>
         </div>
-        {amount && (
-          <p className="text-xs text-muted-foreground">
-            You will pay <span className="font-semibold text-foreground font-mono">K {Number(amount).toLocaleString()}</span> for your new card
-          </p>
-        )}
-      </div>
+      )}
 
-      {/* Payment Methods */}
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-foreground">Select payment method</p>
-        <div className="grid grid-cols-2 gap-2">
-          {PAYMENT_METHODS.map((method) => (
-            <button
-              key={method.id}
-              type="button"
-              onClick={() => onSelectMethod(method.id)}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-2 rounded-xl border p-4 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                selectedMethod === method.id
-                  ? "border-primary ring-1 ring-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/40"
-              )}
-            >
-              {selectedMethod === method.id && (
-                <div className="absolute top-2 right-2 size-5 rounded-full bg-primary flex items-center justify-center">
-                  <CheckIcon className="size-3 text-white" strokeWidth={3} />
-                </div>
-              )}
-              {/* Colored dot representing the payment app */}
-              <div
-                className="size-9 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                style={{ backgroundColor: method.color }}
-              >
-                {method.label.charAt(0)}
-              </div>
-              <span className="text-xs font-semibold text-foreground">{method.label}</span>
-            </button>
-          ))}
+      {premium.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Premium cards
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Premium finish with a one-time card fee
+            </p>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={selected?.tier === "premium" ? selected.id : ""}
+            onValueChange={(value) => {
+              const design = premium.find((item) => item.id === value)
+              if (design) onSelect(design)
+            }}
+            className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2"
+          >
+            {premium.map((design) => (
+              <SelectableCard
+                key={design.id}
+                design={design}
+                selected={selected?.id === design.id}
+              />
+            ))}
+          </ToggleGroup>
         </div>
-      </div>
+      )}
 
       <div className="flex flex-col gap-3 pt-2">
         <Button
           onClick={onContinue}
-          disabled={!selectedMethod || !amount}
-          className="w-full h-11 text-sm font-semibold"
+          disabled={!selected}
+          size="lg"
+          className="w-full"
         >
           Continue
         </Button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeftIcon className="size-3.5" />
-          Go back
-        </button>
+        <Button onClick={onCancel} variant="ghost" size="lg" className="w-full">
+          <XIcon data-icon="inline-start" />
+          Cancel
+        </Button>
       </div>
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*                           Step 4: Verification                              */
-/* -------------------------------------------------------------------------- */
+function PurposeStep({
+  purposes,
+  selected,
+  onSelect,
+  onContinue,
+  onBack,
+  isSubmitting,
+}: {
+  purposes: CardPurpose[]
+  selected: CardPurpose | null
+  onSelect: (purpose: CardPurpose) => void
+  onContinue: () => void
+  onBack: () => void
+  isSubmitting: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-foreground">
+          What&apos;s your purpose?
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tell us how you plan to use this card
+        </p>
+      </div>
+      <ToggleGroup
+        type="single"
+        value={selected?.id ?? ""}
+        onValueChange={(value) => {
+          const purpose = purposes.find((item) => item.id === value)
+          if (purpose) onSelect(purpose)
+        }}
+        className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2"
+      >
+        {purposes.map((purpose) => (
+          <ToggleGroupItem
+            key={purpose.id}
+            value={purpose.id}
+            aria-label={`Select ${purpose.name}`}
+            className={cn(
+              "h-auto flex-col items-start rounded-xl border px-4 py-3.5 text-left whitespace-normal",
+              selected?.id === purpose.id
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border bg-background hover:border-muted-foreground/40"
+            )}
+          >
+            <p className="text-sm font-semibold text-foreground">
+              {purpose.name}
+            </p>
+            {purpose.description && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {purpose.description}
+              </p>
+            )}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {purposes.length === 0 && (
+        <ErrorMessage message="No card purposes are available. Ask an administrator to configure one." />
+      )}
+      <div className="flex flex-col gap-3 pt-2">
+        <Button
+          onClick={onContinue}
+          disabled={!selected || isSubmitting}
+          size="lg"
+          className="w-full"
+        >
+          {isSubmitting ? <Spinner /> : "Continue"}
+        </Button>
+        <Button
+          onClick={onBack}
+          disabled={isSubmitting}
+          variant="ghost"
+          size="lg"
+          className="w-full"
+        >
+          <ChevronLeftIcon data-icon="inline-start" />
+          Go back
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function PaymentStep({
+  design,
+  methods,
+  selected,
+  initialBalance,
+  onSelect,
+  onInitialBalanceChange,
+  onContinue,
+  onBack,
+}: {
+  design: CardDesign
+  methods: CardPaymentMethod[]
+  selected: CardPaymentMethod | null
+  initialBalance: string
+  onSelect: (method: CardPaymentMethod) => void
+  onInitialBalanceChange: (value: string) => void
+  onContinue: () => void
+  onBack: () => void
+}) {
+  const parsedBalance = initialBalance === "" ? 0 : Number(initialBalance)
+  const balanceIsRequired = design.tier === "standard"
+  const balanceIsValid =
+    Number.isInteger(parsedBalance) &&
+    (parsedBalance === 0
+      ? !balanceIsRequired
+      : parsedBalance >= MIN_INITIAL_BALANCE &&
+        parsedBalance <= MAX_INITIAL_BALANCE)
+  const balanceError = !balanceIsValid
+    ? balanceIsRequired && initialBalance === ""
+      ? "Enter an initial balance."
+      : `Enter 0 or an amount from ${MIN_INITIAL_BALANCE.toLocaleString()} to ${MAX_INITIAL_BALANCE.toLocaleString()} MMK.`
+    : null
+  const totalAmount = design.price.amount + parsedBalance
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-foreground">
+          How would you like to pay?
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Set the starting balance and choose a payment method
+        </p>
+      </div>
+      <FieldGroup>
+        <Field data-invalid={balanceError ? true : undefined}>
+          <FieldLabel htmlFor="initial-card-balance">
+            Initial card balance {balanceIsRequired ? "" : "(optional)"}
+          </FieldLabel>
+          <Input
+            id="initial-card-balance"
+            type="number"
+            inputMode="numeric"
+            min={balanceIsRequired ? MIN_INITIAL_BALANCE : 0}
+            max={MAX_INITIAL_BALANCE}
+            step="1000"
+            placeholder={balanceIsRequired ? "10,000" : "0"}
+            value={initialBalance}
+            onChange={(event) => onInitialBalanceChange(event.target.value)}
+            aria-invalid={balanceError ? true : undefined}
+          />
+          <FieldDescription>
+            {balanceIsRequired
+              ? "Required for Standard cards."
+              : "Add money to your Premium card now, or leave it empty."}{" "}
+            Maximum {MAX_INITIAL_BALANCE.toLocaleString()} MMK.
+          </FieldDescription>
+          {balanceError && <FieldError>{balanceError}</FieldError>}
+        </Field>
+      </FieldGroup>
+      <div className="rounded-xl border border-border bg-muted/40 p-4">
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Card fee</span>
+            <span className="font-mono font-medium text-foreground">
+              {formatPrice(design)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Initial balance</span>
+            <span className="font-mono font-medium text-foreground">
+              {parsedBalance.toLocaleString()} {design.price.currency}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-2">
+            <span className="font-semibold text-foreground">Total to pay</span>
+            <span className="font-mono font-semibold text-foreground">
+              {totalAmount.toLocaleString()} {design.price.currency}
+            </span>
+          </div>
+        </div>
+      </div>
+      <ToggleGroup
+        type="single"
+        value={selected?.id ?? ""}
+        onValueChange={(value) => {
+          const method = methods.find((item) => item.id === value)
+          if (method) onSelect(method)
+        }}
+        className="grid w-full grid-cols-2 gap-2"
+      >
+        {methods.map((method) => (
+          <ToggleGroupItem
+            key={method.id}
+            value={method.id}
+            aria-label={`Select ${method.name}`}
+            className={cn(
+              "relative h-auto flex-col items-center justify-center gap-2 rounded-xl border p-4",
+              selected?.id === method.id
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border hover:border-muted-foreground/40"
+            )}
+          >
+            {selected?.id === method.id && (
+              <span className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-primary">
+                <CheckIcon
+                  className="size-3 text-primary-foreground"
+                  strokeWidth={3}
+                />
+              </span>
+            )}
+            {method.logo_url ? (
+              // The API controls the media host, so this cannot use a fixed Next.js image allowlist.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={method.logo_url}
+                alt=""
+                className="size-9 object-contain"
+              />
+            ) : (
+              <span
+                className="flex size-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                style={{ backgroundColor: method.brand_color }}
+              >
+                {method.name.charAt(0)}
+              </span>
+            )}
+            <span className="text-xs font-semibold text-foreground">
+              {method.name}
+            </span>
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {methods.length === 0 && (
+        <ErrorMessage message="No card payment methods are available." />
+      )}
+      <div className="flex flex-col gap-3 pt-2">
+        <Button
+          onClick={onContinue}
+          disabled={!selected || !balanceIsValid}
+          size="lg"
+          className="w-full"
+        >
+          Continue
+        </Button>
+        <Button onClick={onBack} variant="ghost" size="lg" className="w-full">
+          <ChevronLeftIcon data-icon="inline-start" />
+          Go back
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 function VerificationStep({
-  paymentMethod,
-  amount,
+  design,
+  method,
+  initialBalanceAmount,
   proofFile,
   onFileChange,
   onContinue,
   onBack,
+  isSubmitting,
 }: {
-  paymentMethod: PaymentMethod | null
-  amount: string
+  design: CardDesign
+  method: CardPaymentMethod
+  initialBalanceAmount: number
   proofFile: File | null
-  onFileChange: (f: File | null) => void
+  onFileChange: (file: File | null) => void
   onContinue: () => void
   onBack: () => void
+  isSubmitting: boolean
 }) {
-  const method = PAYMENT_METHODS.find((m) => m.id === paymentMethod)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = React.useState(false)
+  const totalAmount = design.price.amount + initialBalanceAmount
 
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files[0]
+  function acceptFile(file: File | undefined) {
     if (file) onFileChange(file)
-  }
-
-  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null
-    onFileChange(file)
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-xl font-bold text-foreground">Scan & Pay</h2>
+        <h2 className="text-xl font-bold text-foreground">Scan &amp; pay</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Scan the QR code below with your{" "}
-          <span className="font-semibold" style={{ color: method?.color }}>
-            {method?.label}
+          Pay{" "}
+          <span className="font-mono font-semibold text-foreground">
+            {totalAmount.toLocaleString()} {design.price.currency}
           </span>{" "}
-          app and pay{" "}
-          <span className="font-semibold text-foreground font-mono">
-            K {Number(amount || 0).toLocaleString()}
-          </span>
+          with {method.name}
         </p>
       </div>
-
-      {/* QR Code */}
       <div className="flex flex-col items-center gap-3">
-        <div className="rounded-2xl border border-border p-4 bg-white shadow-sm">
-          <Image
-            src="/aya-pay-qr.png"
-            alt="Payment QR Code"
-            width={180}
-            height={180}
-            className="rounded-lg"
-          />
-        </div>
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-white"
-          style={{ backgroundColor: method?.color ?? "#1a1f2e" }}
-        >
-          <div className="size-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
-            {method?.label.charAt(0)}
+        {method.qr_code_url ? (
+          <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+            {/* The API controls the media host, so this cannot use a fixed Next.js image allowlist. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={method.qr_code_url}
+              alt={`${method.name} payment QR code`}
+              className="size-[180px] rounded-lg object-contain"
+            />
           </div>
-          {method?.label} QR Code
-        </div>
+        ) : (
+          <ErrorMessage
+            message={`${method.name} does not have a QR code configured yet.`}
+          />
+        )}
+        {(method.account_name || method.account_number) && (
+          <div className="text-center text-xs text-muted-foreground">
+            {method.account_name && <p>{method.account_name}</p>}
+            {method.account_number && (
+              <p className="font-mono text-foreground">
+                {method.account_number}
+              </p>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Upload proof */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-foreground">Upload payment proof</p>
+        <p className="text-sm font-medium text-foreground">
+          Upload payment proof
+        </p>
         <div
           role="button"
           tabIndex={0}
           onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onKeyDown={(event) =>
+            event.key === "Enter" && fileInputRef.current?.click()
+          }
+          onDragOver={(event) => {
+            event.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
+          onDrop={(event) => {
+            event.preventDefault()
+            setDragOver(false)
+            acceptFile(event.dataTransfer.files[0])
+          }}
           className={cn(
-            "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all cursor-pointer",
+            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all",
             dragOver
               ? "border-primary bg-primary/5"
               : proofFile
@@ -505,7 +640,9 @@ function VerificationStep({
           {proofFile ? (
             <>
               <CheckCircle2Icon className="size-8 text-primary" />
-              <p className="text-sm font-semibold text-foreground">{proofFile.name}</p>
+              <p className="text-sm font-semibold text-foreground">
+                {proofFile.name}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {(proofFile.size / 1024).toFixed(1)} KB · Click to change
               </p>
@@ -516,168 +653,295 @@ function VerificationStep({
               <p className="text-sm font-medium text-foreground">
                 Drop your screenshot here
               </p>
-              <p className="text-xs text-muted-foreground">or click to browse · PNG, JPG up to 10MB</p>
+              <p className="text-xs text-muted-foreground">
+                or click to browse · PNG, JPG or WebP up to 10MB
+              </p>
             </>
           )}
         </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           className="sr-only"
-          onChange={handleFileInput}
+          onChange={(event) => acceptFile(event.target.files?.[0])}
           aria-label="Upload payment proof"
         />
       </div>
-
       <div className="flex flex-col gap-3 pt-2">
         <Button
           onClick={onContinue}
-          disabled={!proofFile}
-          className="w-full h-11 text-sm font-semibold"
+          disabled={!proofFile || !method.qr_code_url || isSubmitting}
+          size="lg"
+          className="w-full"
         >
-          Continue
+          {isSubmitting ? <Spinner /> : "Submit card order"}
         </Button>
-        <button
-          type="button"
+        <Button
           onClick={onBack}
-          className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          disabled={isSubmitting}
+          variant="ghost"
+          size="lg"
+          className="w-full"
         >
-          <ChevronLeftIcon className="size-3.5" />
+          <ChevronLeftIcon data-icon="inline-start" />
           Go back
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Success Screen                                   */
-/* -------------------------------------------------------------------------- */
-
-function SuccessScreen({ onClose }: { onClose: () => void }) {
+function SuccessScreen({
+  order,
+  onClose,
+}: {
+  order: CardOrder
+  onClose: () => void
+}) {
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
-      {/* Animated check */}
-      <div className="relative">
-        <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center animate-in zoom-in-50 duration-500">
-          <div className="size-14 rounded-full bg-primary/20 flex items-center justify-center">
-            <CheckCircle2Icon className="size-10 text-primary" />
-          </div>
+      <div className="flex size-20 items-center justify-center rounded-full bg-primary/10">
+        <div className="flex size-14 items-center justify-center rounded-full bg-primary/20">
+          <CheckCircle2Icon className="size-10 text-primary" />
         </div>
       </div>
-
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold text-foreground">{"Your card is on the way! 🎉"}</h2>
-        <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-          {"Your transfer is on the way. We'll review your payment proof and process your card order within 1–3 business days."}
+        <h2 className="text-2xl font-bold text-foreground">
+          Card order submitted
+        </h2>
+        <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+          We&apos;ll review order {order.number} and notify your organization
+          when its status changes.
         </p>
       </div>
-
-      <div className="rounded-xl bg-muted/50 border border-border p-4 w-full text-sm text-left">
-        <p className="text-muted-foreground">{"What's next?"}</p>
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {[
-            "We'll verify your payment proof",
-            "Your card will be processed & printed",
-            "You'll receive a notification when it ships",
-          ].map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-foreground">
-              <CheckIcon className="size-4 text-primary shrink-0 mt-0.5" strokeWidth={3} />
-              {item}
-            </li>
-          ))}
-        </ul>
+      <div className="w-full rounded-xl border border-border bg-muted/50 p-4 text-left text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Selected card</span>
+          <span className="font-semibold text-foreground">
+            {order.design.name}
+          </span>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Status</span>
+          <span className="font-semibold text-foreground">Pending review</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Total paid</span>
+          <span className="font-mono font-semibold text-foreground">
+            {order.total.amount.toLocaleString()} {order.total.currency}
+          </span>
+        </div>
       </div>
-
-      <Button onClick={onClose} className="w-full h-11 text-sm font-semibold">
+      <Button onClick={onClose} size="lg" className="w-full">
         Done
       </Button>
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*                           Main OrderCardFlow                                */
-/* -------------------------------------------------------------------------- */
-
 export function OrderCardFlow({ onClose }: { onClose: () => void }) {
+  const organization = useActiveOrganization()
+  const [catalog, setCatalog] = React.useState<CardOrderCatalog | null>(null)
+  const [catalogError, setCatalogError] = React.useState<string | null>(null)
+  const [isLoadingCatalog, setIsLoadingCatalog] = React.useState(true)
   const [currentStep, setCurrentStep] = React.useState<Step>("card")
-  const [isDone, setIsDone] = React.useState(false)
-
-  // Step 1 state
-  const [cardStyle, setCardStyle] = React.useState<"dark" | "light">("dark")
-  // Step 2 state
-  const [purpose, setPurpose] = React.useState<string | null>(null)
-  // Step 3 state
-  const [amount, setAmount] = React.useState("")
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod | null>(null)
-  // Step 4 state
+  const [selectedDesign, setSelectedDesign] = React.useState<CardDesign | null>(
+    null
+  )
+  const [selectedPurpose, setSelectedPurpose] =
+    React.useState<CardPurpose | null>(null)
+  const [selectedMethod, setSelectedMethod] =
+    React.useState<CardPaymentMethod | null>(null)
   const [proofFile, setProofFile] = React.useState<File | null>(null)
+  const [initialBalance, setInitialBalance] = React.useState("")
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const [completedOrder, setCompletedOrder] = React.useState<CardOrder | null>(
+    null
+  )
+  const [idempotencyKey] = React.useState(() => crypto.randomUUID())
 
-  function goNext() {
-    if (currentStep === "card") setCurrentStep("purpose")
-    else if (currentStep === "purpose") setCurrentStep("payment")
-    else if (currentStep === "payment") setCurrentStep("verification")
-    else if (currentStep === "verification") setIsDone(true)
+  const loadCatalog = React.useCallback(async () => {
+    if (!organization) {
+      throw new Error("Choose an organization before ordering a card.")
+    }
+    return fetchCardOrderCatalog(organization.id)
+  }, [organization])
+
+  React.useEffect(() => {
+    let cancelled = false
+
+    async function run() {
+      try {
+        const result = await loadCatalog()
+        if (!cancelled) setCatalog(result)
+      } catch (error) {
+        if (!cancelled) {
+          setCatalogError(
+            error instanceof ApiError
+              ? error.message
+              : error instanceof Error
+                ? error.message
+                : "Failed to load available cards."
+          )
+        }
+      } finally {
+        if (!cancelled) setIsLoadingCatalog(false)
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [loadCatalog])
+
+  async function retryCatalog() {
+    setIsLoadingCatalog(true)
+    setCatalogError(null)
+    try {
+      setCatalog(await loadCatalog())
+    } catch (error) {
+      setCatalogError(
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Failed to load available cards."
+      )
+    } finally {
+      setIsLoadingCatalog(false)
+    }
+  }
+
+  const steps = PREMIUM_STEPS
+
+  async function submitOrder() {
+    if (!organization || !selectedDesign || !selectedPurpose) return
+    const initialBalanceAmount =
+      initialBalance === "" ? 0 : Number(initialBalance)
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const order = await createCardOrder(organization.id, {
+        cardDesignId: selectedDesign.id,
+        cardPurposeId: selectedPurpose.id,
+        idempotencyKey,
+        initialBalanceAmount,
+        cardPaymentMethodId: selectedMethod?.id,
+        paymentProof: proofFile ?? undefined,
+      })
+      setCompletedOrder(order)
+    } catch (error) {
+      setSubmitError(
+        error instanceof ApiError
+          ? error.message
+          : "Failed to submit your card order."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function goBack() {
+    setSubmitError(null)
     if (currentStep === "purpose") setCurrentStep("card")
     else if (currentStep === "payment") setCurrentStep("purpose")
     else if (currentStep === "verification") setCurrentStep("payment")
   }
 
   return (
-    /* Full-screen overlay */
     <div
       className="fixed inset-0 z-50 flex flex-col bg-background"
       role="dialog"
       aria-modal="true"
       aria-label="Order card"
     >
-      {/* Stepper header — hidden when done */}
-      {!isDone && (
-        <StepperHeader current={currentStep} onClose={onClose} />
+      {!completedOrder && (
+        <StepperHeader current={currentStep} steps={steps} onClose={onClose} />
       )}
-
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-lg px-6 py-8">
-          {isDone ? (
-            <SuccessScreen onClose={onClose} />
-          ) : currentStep === "card" ? (
-            <CardStep
-              selectedStyle={cardStyle}
-              onSelect={setCardStyle}
-              onContinue={goNext}
-              onCancel={onClose}
-            />
-          ) : currentStep === "purpose" ? (
-            <PurposeStep
-              selected={purpose}
-              onSelect={setPurpose}
-              onContinue={goNext}
-              onBack={goBack}
-            />
-          ) : currentStep === "payment" ? (
-            <PaymentStep
-              amount={amount}
-              onAmountChange={setAmount}
-              selectedMethod={paymentMethod}
-              onSelectMethod={setPaymentMethod}
-              onContinue={goNext}
-              onBack={goBack}
-            />
+        <div className="mx-auto max-w-xl px-6 py-8">
+          {completedOrder ? (
+            <SuccessScreen order={completedOrder} onClose={onClose} />
+          ) : isLoadingCatalog ? (
+            <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Spinner />
+              Loading available cards…
+            </div>
+          ) : catalogError ? (
+            <div className="flex min-h-64 flex-col items-center justify-center gap-4">
+              <ErrorMessage message={catalogError} />
+              <Button onClick={() => void retryCatalog()} variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : !catalog || catalog.designs.length === 0 ? (
+            <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+              <h2 className="text-lg font-semibold text-foreground">
+                No cards available
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Card ordering is temporarily unavailable.
+              </p>
+              <Button onClick={onClose} variant="outline">
+                Close
+              </Button>
+            </div>
           ) : (
-            <VerificationStep
-              paymentMethod={paymentMethod}
-              amount={amount}
-              proofFile={proofFile}
-              onFileChange={setProofFile}
-              onContinue={goNext}
-              onBack={goBack}
-            />
+            <div className="flex flex-col gap-4">
+              {submitError && <ErrorMessage message={submitError} />}
+              {currentStep === "card" ? (
+                <CardStep
+                  catalog={catalog}
+                  selected={selectedDesign}
+                  onSelect={(design) => {
+                    setSelectedDesign(design)
+                    setSelectedMethod(null)
+                    setProofFile(null)
+                    setInitialBalance("")
+                  }}
+                  onContinue={() => setCurrentStep("purpose")}
+                  onCancel={onClose}
+                />
+              ) : currentStep === "purpose" ? (
+                <PurposeStep
+                  purposes={catalog.purposes}
+                  selected={selectedPurpose}
+                  onSelect={setSelectedPurpose}
+                  onContinue={() => setCurrentStep("payment")}
+                  onBack={goBack}
+                  isSubmitting={isSubmitting}
+                />
+              ) : currentStep === "payment" && selectedDesign ? (
+                <PaymentStep
+                  design={selectedDesign}
+                  methods={catalog.payment_methods}
+                  selected={selectedMethod}
+                  initialBalance={initialBalance}
+                  onSelect={setSelectedMethod}
+                  onInitialBalanceChange={setInitialBalance}
+                  onContinue={() => setCurrentStep("verification")}
+                  onBack={goBack}
+                />
+              ) : currentStep === "verification" &&
+                selectedDesign &&
+                selectedMethod ? (
+                <VerificationStep
+                  design={selectedDesign}
+                  method={selectedMethod}
+                  initialBalanceAmount={
+                    initialBalance === "" ? 0 : Number(initialBalance)
+                  }
+                  proofFile={proofFile}
+                  onFileChange={setProofFile}
+                  onContinue={() => void submitOrder()}
+                  onBack={goBack}
+                  isSubmitting={isSubmitting}
+                />
+              ) : null}
+            </div>
           )}
         </div>
       </div>

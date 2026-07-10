@@ -21,6 +21,9 @@ export const en = {
     settings: "Settings",
   },
   userDropdown: {
+    openProfileMenu: "Open profile menu",
+    workspaces: "Workspaces",
+    addWorkspace: "Add workspace",
     upgrade: "Upgrade to Pro",
     account: "Account",
     notifications: "Notifications",
