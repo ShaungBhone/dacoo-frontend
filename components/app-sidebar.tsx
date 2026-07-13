@@ -21,6 +21,7 @@ import {
   CreditCardIcon,
   UsersIcon,
   WalletIcon,
+  BarChart2Icon,
 } from "lucide-react"
 
 // This is sample data.
@@ -43,6 +44,7 @@ const data = {
       items: [
         { title: "Customers", url: "/customers", icon: <UsersIcon /> },
         { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
+        { title: "Analytics", url: "/analytics", icon: <BarChart2Icon /> },
       ],
     },
     {

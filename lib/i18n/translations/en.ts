@@ -6,6 +6,7 @@ export const en = {
     datasets: "Datasets",
     customers: "Customers",
     activity: "Activity",
+    analytics: "Analytics",
     billing: "Billing",
     wallet: "Wallet",
     cards: "Cards",
