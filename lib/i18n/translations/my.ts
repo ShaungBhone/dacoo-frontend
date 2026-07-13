@@ -6,6 +6,7 @@ export const my = {
     datasets: "ဒေတာစုများ",
     customers: "ဖောက်သည်များ",
     activity: "လှုပ်ရှားမှုများ",
+    analytics: "ခွဲခြမ်းစိတ်ဖြာမှု",
     billing: "ငွေတောင်းခံလွှာ",
     wallet: "ပိုက်ဆံအိတ်",
     cards: "ကတ်များ",
