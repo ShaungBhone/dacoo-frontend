@@ -7,7 +7,6 @@ import {
   TriangleAlertIcon,
   SmartphoneIcon,
   XIcon,
-  ChevronDownIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -17,16 +16,14 @@ import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import {
-  ModelSelector,
-  ModelSelectorContent,
-  ModelSelectorEmpty,
-  ModelSelectorGroup,
-  ModelSelectorInput,
-  ModelSelectorItem,
-  ModelSelectorList,
-  ModelSelectorLogo,
-  ModelSelectorName,
-} from "@/components/ai-elements/model-selector"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useRag } from "@/components/rag/rag-context"
 
 export function ConfigRail() {
@@ -40,12 +37,6 @@ export function ConfigRail() {
     setManionDefaultModel,
     modelCatalog,
   } = useRag()
-
-  const [modelPickerOpen, setModelPickerOpen] = React.useState(false)
-
-  const selectedModel = modelCatalog.chatModels.find(
-    (m) => m.id === manionDefaultModel
-  ) ?? null
 
   // Group providers for the picker
   const providers = React.useMemo(() => {
@@ -75,67 +66,43 @@ export function ConfigRail() {
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          The model manion will use by default in the React Native app. This
-          does not affect the playground.
+          Default model for the Manion mobile app.
         </p>
         <div className="flex items-center gap-2">
-          <ModelSelector open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
-            <button
-              type="button"
-              onClick={() => setModelPickerOpen(true)}
-              className={cn(
-                "flex flex-1 items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                !selectedModel && "text-muted-foreground"
-              )}
+          <Select
+            value={manionDefaultModel || undefined}
+            onValueChange={setManionDefaultModel}
+          >
+            <SelectTrigger
+              className="w-full min-w-0 flex-1"
+              aria-label="Manion default model"
             >
-              <span className="flex items-center gap-2 truncate">
-                {selectedModel ? (
-                  <>
-                    <ModelSelectorLogo provider={selectedModel.provider.toLowerCase()} />
-                    <span className="truncate">
-                      {stripVendorPrefix(selectedModel.label)}
-                    </span>
-                  </>
-                ) : (
-                  "Select model…"
-                )}
-              </span>
-              <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-            </button>
-            <ModelSelectorContent title="Manion default model">
-              <ModelSelectorInput placeholder="Search models…" />
-              <ModelSelectorList>
-                <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                {providers.map((provider) => (
-                  <ModelSelectorGroup
-                    key={provider}
-                    heading={formatProvider(provider)}
-                  >
-                    {modelCatalog.chatModels
-                      .filter((m) => m.provider === provider)
-                      .map((m) => (
-                        <ModelSelectorItem
-                          key={m.id}
-                          value={m.id}
-                          onSelect={() => {
-                            setManionDefaultModel(m.id)
-                            setModelPickerOpen(false)
-                          }}
-                          data-checked={
-                            m.id === manionDefaultModel ? "true" : undefined
-                          }
-                        >
-                          <ModelSelectorLogo provider={m.provider.toLowerCase()} />
-                          <ModelSelectorName>
-                            {stripVendorPrefix(m.label)}
-                          </ModelSelectorName>
-                        </ModelSelectorItem>
-                      ))}
-                  </ModelSelectorGroup>
-                ))}
-              </ModelSelectorList>
-            </ModelSelectorContent>
-          </ModelSelector>
+              <SelectValue placeholder="Select model…" />
+            </SelectTrigger>
+            <SelectContent>
+              {providers.map((provider) => (
+                <SelectGroup key={provider}>
+                  <SelectLabel>{formatProvider(provider)}</SelectLabel>
+                  {modelCatalog.chatModels
+                    .filter((m) => m.provider === provider)
+                    .map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <img
+                          src={`https://models.dev/logos/${m.provider.toLowerCase()}.svg`}
+                          alt=""
+                          width={12}
+                          height={12}
+                          className="size-3 shrink-0 dark:invert"
+                        />
+                        <span className="truncate">
+                          {stripVendorPrefix(m.label)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
           {manionDefaultModel && (
             <Button
               variant="ghost"

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import type { ColumnDef } from "@tanstack/react-table"
 import {
   CoinsIcon,
   DownloadIcon,
@@ -54,14 +55,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { DataTableColumnHeader } from "@/components/data-table-column-header"
 import { PlanPickerDialog } from "@/components/plan-picker-dialog"
 import {
   fetchSubscription,
@@ -108,8 +103,7 @@ export function BillingView() {
   const [transactions, setTransactions] = React.useState<WalletTransaction[]>(
     []
   )
-  const [isLoadingTransactions, setIsLoadingTransactions] =
-    React.useState(true)
+  const [isLoadingTransactions, setIsLoadingTransactions] = React.useState(true)
   const [transactionsError, setTransactionsError] = React.useState<
     string | null
   >(null)
@@ -238,7 +232,9 @@ export function BillingView() {
       setTransactions(list)
     } catch (err) {
       setTransactionsError(
-        err instanceof ApiError ? err.message : "Failed to load recent activity."
+        err instanceof ApiError
+          ? err.message
+          : "Failed to load recent activity."
       )
     } finally {
       setIsLoadingTransactions(false)
@@ -250,17 +246,226 @@ export function BillingView() {
     loadTransactions()
   }, [loadTransactions])
 
-  async function handleDownloadInvoice(invoice: Invoice) {
-    if (!organization) return
-    setDownloadingInvoiceId(invoice.id)
-    try {
-      await downloadInvoicePdf(organization.id, invoice)
-    } catch {
-      // Swallow — the download simply won't start; nothing else to show inline here.
-    } finally {
-      setDownloadingInvoiceId(null)
-    }
-  }
+  const handleDownloadInvoice = React.useCallback(
+    async (invoice: Invoice) => {
+      if (!organization) return
+      setDownloadingInvoiceId(invoice.id)
+      try {
+        await downloadInvoicePdf(organization.id, invoice)
+      } catch {
+        // Swallow — the download simply won't start; nothing else to show inline here.
+      } finally {
+        setDownloadingInvoiceId(null)
+      }
+    },
+    [organization]
+  )
+
+  const transactionColumns = React.useMemo<ColumnDef<WalletTransaction>[]>(
+    () => [
+      {
+        accessorKey: "type",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Type" />
+        ),
+        cell: ({ row }) => <TransactionTypeBadge type={row.original.type} />,
+        meta: {
+          label: "Type",
+          headerClassName:
+            "px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName: "px-4 py-3",
+        },
+      },
+      {
+        id: "description",
+        accessorFn: (transaction) =>
+          transaction.description ?? transaction.model ?? "—",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Description" />
+        ),
+        meta: {
+          label: "Description",
+          headerClassName:
+            "hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell",
+          cellClassName:
+            "hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell",
+        },
+      },
+      {
+        id: "amount",
+        accessorFn: (transaction) => Number(transaction.amount),
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Amount"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => (
+          <span
+            className={cn(
+              "font-mono text-sm font-medium tabular-nums",
+              row.original.type === "debit"
+                ? "text-destructive"
+                : "text-primary"
+            )}
+          >
+            {row.original.type === "debit" ? "-" : "+"}
+            {Number(row.original.amount).toLocaleString()}
+          </span>
+        ),
+        meta: {
+          label: "Amount",
+          headerClassName:
+            "px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName: "px-4 py-3 text-right",
+        },
+      },
+      {
+        id: "balance_after",
+        accessorFn: (transaction) => Number(transaction.balance_after),
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Balance"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => Number(row.original.balance_after).toLocaleString(),
+        meta: {
+          label: "Balance",
+          headerClassName:
+            "px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName:
+            "px-4 py-3 text-right font-mono text-sm text-muted-foreground tabular-nums",
+        },
+      },
+      {
+        accessorKey: "created_at",
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Date"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => formatDate(row.original.created_at),
+        meta: {
+          label: "Date",
+          headerClassName:
+            "hidden px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell",
+          cellClassName:
+            "hidden px-4 py-3 text-right text-sm text-muted-foreground sm:table-cell",
+        },
+      },
+    ],
+    []
+  )
+
+  const invoiceColumns = React.useMemo<ColumnDef<Invoice>[]>(
+    () => [
+      {
+        accessorKey: "number",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Invoice" />
+        ),
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-mono text-sm font-medium text-foreground tabular-nums">
+              {row.original.number}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Issued {formatDate(row.original.issued_at)}
+            </span>
+          </div>
+        ),
+        meta: {
+          label: "Invoice",
+          headerClassName:
+            "px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName: "px-4 py-3",
+        },
+      },
+      {
+        accessorKey: "due_at",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Due" />
+        ),
+        cell: ({ row }) => (
+          <>
+            {formatDate(row.original.due_at)}
+            {row.original.is_overdue && (
+              <span className="ml-2 text-xs font-medium text-destructive">
+                Overdue
+              </span>
+            )}
+          </>
+        ),
+        meta: {
+          label: "Due date",
+          headerClassName:
+            "hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell",
+          cellClassName:
+            "hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell",
+        },
+      },
+      {
+        id: "total",
+        accessorFn: (invoice) => Number(invoice.total),
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Total"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => `$${Number(row.original.total).toFixed(2)}`,
+        meta: {
+          label: "Total",
+          headerClassName:
+            "px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName:
+            "px-4 py-3 text-right font-mono text-sm font-medium text-foreground tabular-nums",
+        },
+      },
+      {
+        accessorKey: "status",
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Status"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2">
+            <StatusBadge status={row.original.status} />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Download ${row.original.number} PDF`}
+              disabled={downloadingInvoiceId === row.original.id}
+              onClick={() => handleDownloadInvoice(row.original)}
+            >
+              {downloadingInvoiceId === row.original.id ? (
+                <Spinner className="size-4" />
+              ) : (
+                <DownloadIcon aria-hidden="true" />
+              )}
+            </Button>
+          </div>
+        ),
+        meta: {
+          label: "Status",
+          headerClassName:
+            "px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+          cellClassName: "px-4 py-3",
+        },
+      },
+    ],
+    [downloadingInvoiceId, handleDownloadInvoice]
+  )
 
   const totalUsedThisMonth = modelUsage.reduce(
     (acc, m) => acc + m.credits_used,
@@ -521,56 +726,15 @@ export function BillingView() {
             </Card>
           ) : (
             <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Type
-                    </TableHead>
-                    <TableHead className="hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
-                      Description
-                    </TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Amount
-                    </TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Balance
-                    </TableHead>
-                    <TableHead className="hidden px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
-                      Date
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((tx) => (
-                    <TableRow key={tx.id} className="hover:bg-muted/20">
-                      <TableCell className="px-4 py-3">
-                        <TransactionTypeBadge type={tx.type} />
-                      </TableCell>
-                      <TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">
-                        {tx.description ?? tx.model ?? "—"}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "px-4 py-3 text-right font-mono text-sm font-medium tabular-nums",
-                          tx.type === "debit"
-                            ? "text-destructive"
-                            : "text-primary"
-                        )}
-                      >
-                        {tx.type === "debit" ? "-" : "+"}
-                        {Number(tx.amount).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right font-mono text-sm text-muted-foreground tabular-nums">
-                        {Number(tx.balance_after).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="hidden px-4 py-3 text-right text-sm text-muted-foreground sm:table-cell">
-                        {formatDate(tx.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={transactionColumns}
+                data={transactions}
+                searchPlaceholder="Search transactions…"
+                searchableColumnIds={["type", "description", "amount"]}
+                headerClassName="bg-muted/30"
+                rowClassName="hover:bg-muted/20"
+                className="p-3"
+              />
             </div>
           )}
         </section>
@@ -629,70 +793,15 @@ export function BillingView() {
             </Card>
           ) : (
             <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Invoice
-                    </TableHead>
-                    <TableHead className="hidden px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
-                      Due
-                    </TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Total
-                    </TableHead>
-                    <TableHead className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      Status
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((inv) => (
-                    <TableRow key={inv.id} className="hover:bg-muted/20">
-                      <TableCell className="px-4 py-3">
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="font-mono text-sm font-medium text-foreground tabular-nums">
-                            {inv.number}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Issued {formatDate(inv.issued_at)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">
-                        {formatDate(inv.due_at)}
-                        {inv.is_overdue && (
-                          <span className="ml-2 text-xs font-medium text-destructive">
-                            Overdue
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right font-mono text-sm font-medium text-foreground tabular-nums">
-                        ${Number(inv.total).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <StatusBadge status={inv.status} />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label="Download PDF"
-                            disabled={downloadingInvoiceId === inv.id}
-                            onClick={() => handleDownloadInvoice(inv)}
-                          >
-                            {downloadingInvoiceId === inv.id ? (
-                              <Spinner className="size-4" />
-                            ) : (
-                              <DownloadIcon aria-hidden="true" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={invoiceColumns}
+                data={invoices}
+                searchPlaceholder="Search invoices…"
+                searchableColumnIds={["number", "status", "total"]}
+                headerClassName="bg-muted/30"
+                rowClassName="hover:bg-muted/20"
+                className="p-3"
+              />
             </div>
           )}
         </section>

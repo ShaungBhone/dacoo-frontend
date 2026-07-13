@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
+import type { ColumnDef } from "@tanstack/react-table"
 import {
   WalletIcon,
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
   PlusIcon,
   CoinsIcon,
-  RefreshCwIcon,
   CircleAlertIcon,
   AlertTriangleIcon,
   CpuIcon,
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import { useActiveOrganization } from "@/hooks/use-active-organization"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -41,17 +41,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { DataTableColumnHeader } from "@/components/data-table-column-header"
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -161,7 +154,7 @@ function CreditsWalletCard({
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <span className="font-mono text-4xl font-bold tracking-tight tabular-nums text-foreground">
+              <span className="font-mono text-4xl font-bold tracking-tight text-foreground tabular-nums">
                 {formatBalance(wallet)}
               </span>
               <span className="text-sm text-muted-foreground">
@@ -178,7 +171,9 @@ function CreditsWalletCard({
 
         <p className="mt-4 text-xs text-muted-foreground">
           Last updated{" "}
-          <time dateTime={wallet.updated_at}>{formatDate(wallet.updated_at)}</time>
+          <time dateTime={wallet.updated_at}>
+            {formatDate(wallet.updated_at)}
+          </time>
         </p>
       </CardContent>
     </Card>
@@ -189,15 +184,18 @@ function SourceWalletCard({ wallet }: { wallet: Wallet }) {
   return (
     <Card className="border border-border shadow-none ring-0">
       <CardContent className="p-5">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="mb-3 flex items-center gap-2">
           <div className="flex size-7 items-center justify-center rounded-md bg-muted">
-            <WalletIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            <WalletIcon
+              className="size-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
           </div>
           <span className="text-sm font-medium text-muted-foreground">
             {wallet.currency_code} Wallet
           </span>
         </div>
-        <span className="font-mono text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+        <span className="font-mono text-2xl font-semibold tracking-tight text-foreground tabular-nums">
           {formatBalance(wallet)}
         </span>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -211,7 +209,7 @@ function SourceWalletCard({ wallet }: { wallet: Wallet }) {
 function WalletCardSkeleton() {
   return (
     <Card className="border border-border shadow-none ring-0">
-      <CardContent className="p-6 flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 p-6">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="h-10 w-40" />
         <Skeleton className="h-3 w-24" />
@@ -462,7 +460,12 @@ function TopUpDialog({
               "Confirm top up"
             )}
           </Button>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-full"
+          >
             Cancel
           </Button>
         </div>
@@ -484,12 +487,19 @@ export function WalletView() {
   const [walletsError, setWalletsError] = React.useState<string | null>(null)
 
   /* ---- selected wallet for tx/usage ---- */
-  const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(null)
+  const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(
+    null
+  )
 
   /* ---- transactions ---- */
-  const [transactions, setTransactions] = React.useState<WalletTransaction[]>([])
-  const [isLoadingTransactions, setIsLoadingTransactions] = React.useState(false)
-  const [transactionsError, setTransactionsError] = React.useState<string | null>(null)
+  const [transactions, setTransactions] = React.useState<WalletTransaction[]>(
+    []
+  )
+  const [isLoadingTransactions, setIsLoadingTransactions] =
+    React.useState(false)
+  const [transactionsError, setTransactionsError] = React.useState<
+    string | null
+  >(null)
 
   /* ---- model usage (credits wallet only) ---- */
   const [modelUsage, setModelUsage] = React.useState<ModelUsage[]>([])
@@ -501,9 +511,16 @@ export function WalletView() {
 
   /* ---- derived ---- */
   const creditsWallet = wallets.find((w) => w.currency_code === CREDIT_CURRENCY)
-  const sourceWallets = wallets.filter((w) => w.currency_code !== CREDIT_CURRENCY)
-  const selectedWallet = wallets.find((w) => w.id === selectedWalletId) ?? creditsWallet ?? wallets[0] ?? null
-  const isCreditsWalletSelected = selectedWallet?.currency_code === CREDIT_CURRENCY
+  const sourceWallets = wallets.filter(
+    (w) => w.currency_code !== CREDIT_CURRENCY
+  )
+  const selectedWallet =
+    wallets.find((w) => w.id === selectedWalletId) ??
+    creditsWallet ??
+    wallets[0] ??
+    null
+  const isCreditsWalletSelected =
+    selectedWallet?.currency_code === CREDIT_CURRENCY
 
   /* ---- load wallets ---- */
   React.useEffect(() => {
@@ -554,9 +571,7 @@ export function WalletView() {
 
   /* ---- handlers ---- */
   function handleTopUpSuccess(updated: Wallet) {
-    setWallets((prev) =>
-      prev.map((w) => (w.id === updated.id ? updated : w))
-    )
+    setWallets((prev) => prev.map((w) => (w.id === updated.id ? updated : w)))
     // refresh transactions
     if (organization && selectedWallet) {
       fetchWalletTransactions(organization.id, selectedWallet.id)
@@ -564,6 +579,128 @@ export function WalletView() {
         .catch(() => {})
     }
   }
+
+  const transactionColumns = React.useMemo<
+    ColumnDef<WalletTransaction>[]
+  >(() => {
+    const columns: ColumnDef<WalletTransaction>[] = [
+      {
+        accessorKey: "created_at",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Date" />
+        ),
+        cell: ({ row }) => (
+          <time dateTime={row.original.created_at}>
+            {formatDateTime(row.original.created_at)}
+          </time>
+        ),
+        meta: {
+          label: "Date",
+          cellClassName: "whitespace-nowrap text-xs text-muted-foreground",
+        },
+      },
+      {
+        accessorKey: "type",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Type" />
+        ),
+        cell: ({ row }) => <TransactionTypeBadge type={row.original.type} />,
+        meta: { label: "Type" },
+      },
+      {
+        accessorKey: "description",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Description" />
+        ),
+        cell: ({ row }) => row.original.description ?? "—",
+        meta: {
+          label: "Description",
+          cellClassName: "max-w-[200px] truncate text-sm text-muted-foreground",
+        },
+      },
+    ]
+
+    if (isCreditsWalletSelected) {
+      columns.push({
+        accessorKey: "model",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Model" />
+        ),
+        cell: ({ row }) =>
+          row.original.model ? (
+            <span className="font-mono text-xs text-muted-foreground">
+              {row.original.model}
+            </span>
+          ) : (
+            "—"
+          ),
+        meta: {
+          label: "Model",
+          headerClassName: "hidden sm:table-cell",
+          cellClassName: "hidden sm:table-cell",
+        },
+      })
+    }
+
+    columns.push(
+      {
+        id: "amount",
+        accessorFn: (transaction) => Number(transaction.amount),
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Amount"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) => (
+          <span
+            className={cn(
+              "font-mono text-sm font-medium tabular-nums",
+              row.original.type === "credit"
+                ? "text-primary"
+                : "text-foreground"
+            )}
+          >
+            {row.original.type === "credit" ? "+" : "-"}
+            {Number(row.original.amount).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        ),
+        meta: {
+          label: "Amount",
+          headerClassName: "text-right",
+          cellClassName: "text-right",
+        },
+      },
+      {
+        id: "balance_after",
+        accessorFn: (transaction) => Number(transaction.balance_after),
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Balance after"
+            className="ml-auto"
+          />
+        ),
+        cell: ({ row }) =>
+          Number(row.original.balance_after).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
+        meta: {
+          label: "Balance after",
+          headerClassName: "text-right",
+          cellClassName:
+            "text-right font-mono text-sm tabular-nums text-muted-foreground",
+        },
+      }
+    )
+
+    return columns
+  }, [isCreditsWalletSelected])
 
   if (!organization) {
     return (
@@ -640,7 +777,10 @@ export function WalletView() {
       {/*  Model usage breakdown (credits wallet only)                         */}
       {/* ------------------------------------------------------------------ */}
       {!isLoadingWallets && creditsWallet && (
-        <section aria-labelledby="usage-heading" className="flex flex-col gap-4">
+        <section
+          aria-labelledby="usage-heading"
+          className="flex flex-col gap-4"
+        >
           <div className="flex items-center justify-between gap-4">
             <h2
               id="usage-heading"
@@ -666,7 +806,7 @@ export function WalletView() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => (
                 <Card key={i} className="border border-border shadow-none">
-                  <CardContent className="p-4 flex flex-col gap-3">
+                  <CardContent className="flex flex-col gap-3 p-4">
                     <Skeleton className="h-3 w-32" />
                     <Skeleton className="h-7 w-20" />
                     <Skeleton className="h-2 w-full" />
@@ -752,7 +892,10 @@ export function WalletView() {
           ) : isLoadingTransactions ? (
             <Card className="border border-border shadow-none">
               <CardContent className="flex items-center justify-center p-8">
-                <Spinner className="size-5 text-muted-foreground" aria-label="Loading transactions" />
+                <Spinner
+                  className="size-5 text-muted-foreground"
+                  aria-label="Loading transactions"
+                />
               </CardContent>
             </Card>
           ) : transactions.length === 0 ? (
@@ -769,75 +912,13 @@ export function WalletView() {
             </Empty>
           ) : (
             <Card className="border border-border shadow-none ring-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      {isCreditsWalletSelected && (
-                        <TableHead className="hidden sm:table-cell">Model</TableHead>
-                      )}
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Balance after</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          <time dateTime={tx.created_at}>
-                            {formatDateTime(tx.created_at)}
-                          </time>
-                        </TableCell>
-                        <TableCell>
-                          <TransactionTypeBadge type={tx.type} />
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                          {tx.description ?? "—"}
-                        </TableCell>
-                        {isCreditsWalletSelected && (
-                          <TableCell className="hidden sm:table-cell">
-                            {tx.model ? (
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {tx.model}
-                              </span>
-                            ) : (
-                              "—"
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell className="text-right">
-                          <span
-                            className={cn(
-                              "font-mono text-sm tabular-nums font-medium",
-                              tx.type === "credit"
-                                ? "text-primary"
-                                : "text-foreground"
-                            )}
-                          >
-                            {tx.type === "credit" ? "+" : "-"}
-                            {parseFloat(tx.amount).toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm tabular-nums text-muted-foreground">
-                          {parseFloat(tx.balance_after).toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable
+                columns={transactionColumns}
+                data={transactions}
+                searchPlaceholder="Search wallet transactions…"
+                searchableColumnIds={["type", "description", "model", "amount"]}
+                className="p-3"
+              />
             </Card>
           )}
         </section>

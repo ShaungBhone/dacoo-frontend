@@ -6,6 +6,7 @@ export const my = {
     datasets: "ဒေတာစုများ",
     customers: "ဖောက်သည်များ",
     activity: "လှုပ်ရှားမှုများ",
+    analytics: "ခွဲခြမ်းစိတ်ဖြာမှု",
     billing: "ငွေတောင်းခံလွှာ",
     wallet: "ပိုက်ဆံအိတ်",
     cards: "ကတ်များ",
@@ -21,6 +22,9 @@ export const my = {
     settings: "ဆက်တင်များ",
   },
   userDropdown: {
+    openProfileMenu: "ပရိုဖိုင်မီနူးကို ဖွင့်ရန်",
+    workspaces: "လုပ်ငန်းခွင်များ",
+    addWorkspace: "လုပ်ငန်းခွင် ထည့်ရန်",
     upgrade: "Pro သို့ အဆင့်မြှင့်ရန်",
     account: "အကောင့်",
     notifications: "အကြောင်းကြားချက်များ",

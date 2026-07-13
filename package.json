@@ -13,10 +13,12 @@
   },
   "dependencies": {
     "@radix-ui/react-use-controllable-state": "^1.2.3",
+    "@stepperize/react": "^7.0.0",
     "@streamdown/cjk": "^1.0.3",
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",
+    "@tanstack/react-table": "^8.21.3",
     "ai": "^7.0.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

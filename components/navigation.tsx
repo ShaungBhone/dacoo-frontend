@@ -12,13 +12,10 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -31,16 +28,8 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useAuth } from "@/contexts/auth-context"
-import { useTranslation } from "@/contexts/language-context"
 import {
   ChevronRightIcon,
-  ChevronsUpDownIcon,
-  SparklesIcon,
-  BadgeCheckIcon,
-  CreditCardIcon,
-  BellIcon,
-  LogOutIcon,
   MoreHorizontalIcon,
   FolderIcon,
   ArrowRightIcon,
@@ -69,31 +58,17 @@ export type Project = {
   icon: React.ReactNode
 }
 
-export type UserData = {
-  name: string
-  email: string
-  avatar: string
-}
-
 export interface NavigationProps {
   navGroups: NavGroup[]
   projects?: Project[]
-  user: UserData
 }
 
 /**
  * Unified Navigation Component
- * Consolidates all navigation elements: main nav, projects, and user menu
- * Provides a single interface for managing sidebar navigation with multiple groups
+ * Consolidates the sidebar navigation groups and optional project links.
  */
-export function Navigation({
-  navGroups,
-  projects = [],
-  user,
-}: NavigationProps) {
+export function Navigation({ navGroups, projects = [] }: NavigationProps) {
   const pathname = usePathname()
-  const { t } = useTranslation()
-  const { logout } = useAuth()
   const { isMobile } = useSidebar()
 
   const renderNavItem = (item: NavItem) => {
@@ -102,11 +77,7 @@ export function Navigation({
     if (!item.items || item.items.length === 0) {
       return (
         <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            tooltip={item.title}
-            isActive={isActive}
-          >
+          <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
             <Link href={item.url}>
               {item.icon}
               <span>{item.title}</span>
@@ -215,78 +186,6 @@ export function Navigation({
           </SidebarMenu>
         </SidebarGroup>
       )}
-
-      {/* User Menu */}
-      <SidebarGroup className="mt-auto">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
-                  </div>
-                  <ChevronsUpDownIcon className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-fit"
-                side={isMobile ? "bottom" : "right"}
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{user.name}</span>
-                      <span className="truncate text-xs">{user.email}</span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <SparklesIcon />
-                    {t("userDropdown.upgrade")}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <BadgeCheckIcon />
-                    {t("userDropdown.account")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <CreditCardIcon />
-                    {t("common.billing")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <BellIcon />
-                    {t("userDropdown.notifications")}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
-                  <LogOutIcon />
-                  {t("common.logout")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroup>
     </>
   )
 }

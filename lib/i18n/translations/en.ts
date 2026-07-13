@@ -6,6 +6,7 @@ export const en = {
     datasets: "Datasets",
     customers: "Customers",
     activity: "Activity",
+    analytics: "Analytics",
     billing: "Billing",
     wallet: "Wallet",
     cards: "Cards",
@@ -21,6 +22,9 @@ export const en = {
     settings: "Settings",
   },
   userDropdown: {
+    openProfileMenu: "Open profile menu",
+    workspaces: "Workspaces",
+    addWorkspace: "Add workspace",
     upgrade: "Upgrade to Pro",
     account: "Account",
     notifications: "Notifications",
