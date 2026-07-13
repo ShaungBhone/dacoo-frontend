@@ -21,6 +21,8 @@ import {
   CreditCardIcon,
   UsersIcon,
   WalletIcon,
+  Building2Icon,
+  MessageSquareIcon,
   BarChart2Icon,
 } from "lucide-react"
 
@@ -43,6 +45,7 @@ const data = {
       group: "Management",
       items: [
         { title: "Customers", url: "/customers", icon: <UsersIcon /> },
+        { title: "Inbox", url: "/inbox", icon: <MessageSquareIcon /> },
         { title: "Activity", url: "/activity", icon: <ActivityIcon /> },
         { title: "Analytics", url: "/analytics", icon: <BarChart2Icon /> },
       ],
